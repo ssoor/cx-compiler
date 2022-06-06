@@ -1,0 +1,15 @@
+*.log
+*.lex
+*.out
+*.output
+
+go/cxlex
+.vscode/
+
+y.*.h
+y.*.c
+lex.*.h
+lex.*.c
+
+t
+go/expr.go
