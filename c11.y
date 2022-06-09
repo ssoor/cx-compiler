@@ -62,105 +62,87 @@
 %token	ALIGNAS ALIGNOF ATOMIC GENERIC NORETURN STATIC_ASSERT THREAD_LOCAL
 %start global_statements
 
+// \s+\{.*\}
+
 %%
 
 global_statements
-	: global_statement
-	| global_statement global_statements
+	: global_statement 						
+	| global_statement global_statements 	
 	;
 
 global_statement
 	: ';'
-	| IGNORE
-	| COMMENT
-	| BLOCK_COMMENT
+	| IDENTIFIER ';'
+	| enum_declaration ';'
 	| type_declaration ';'
+	| typedef_declaration ';'
 	| variable_declaration ';'
 	| function_declaration
 	;
 
+block_statement
+	: ';'
+	| BREAK ';'
+	| if_statement
+	| for_statement
+	| case_statement
+	| while_statement
+	| switch_statement
+	| return_statement
+	| expression_statement
+	| assignment_statement
+	| enum_declaration  ';'
+	| type_declaration  ';'
+	| variable_declaration  ';'
+	;
+
 function_declaration
-	: function_declaration_qualifier block_declaration
+	: function_qualifier block_declaration
+	| INLINE function_qualifier block_declaration
+	| variable_storage_qualifier function_qualifier block_declaration
 	;
-
-function_declaration_qualifier
-	: function_qualifier
-	| INLINE function_declaration_qualifier
-	| variable_storage_qualifier function_declaration_qualifier
-	;
-
-function_qualifier
-	: type_ref name_ref params_declaration
-	| type_ref '(' variable_declaration_item_normal ')' IDENTIFIER params_declaration // 新增语法 - 定义成员方法
+	
+enum_declaration
+	: ENUM type_enum_body
 	;
 
 type_declaration
-	: type_block_qualifier IDENTIFIER
-	| type_block_qualifier type_declaration_block
-	| type_block_qualifier IDENTIFIER type_declaration_block
-	| TYPEDEF type_ref IDENTIFIER
-	| TYPEDEF type_declaration IDENTIFIER
+	: type_block_specifier
+	| type_block_specifier variable_declaration_names
 	;
 
-type_declaration_block
-	: '{' '}'
-	| '{' type_declaration_block_items '}'
-	;
-
-type_declaration_block_items
-	: type_declaration_block_item
-	| type_declaration_block_items type_declaration_block_item
-	;
-
-type_declaration_block_item
-	: variable_declaration_item ';' /* for anonymous struct/union */
+typedef_declaration
+	: TYPEDEF type_ref IDENTIFIER
+	| TYPEDEF enum_declaration IDENTIFIER
+	| TYPEDEF type_block_specifier IDENTIFIER
 	;
 
 variable_declaration
-	: variable_declaration_item
-	| variable_declaration_item '=' expression
-	| variable_storage_qualifier variable_declaration
+	: type_ref variable_declaration_names
+	| variable_storage_qualifier type_ref variable_declaration_names
 	;
 
-variable_declaration_item
-	: variable_declaration_item_normal
-	| variable_declaration_item_normal variable_declaration_item_array
+type_enum_body
+	: '{' '}'
+	| '{' enum_body_items '}'
 	;
 
-variable_declaration_item_normal
-	: type_ref IDENTIFIER
+enum_body_items
+	: enum_body_item ','
+	| enum_body_items enum_body_item ','
 	;
 
-variable_declaration_item_array
-	: '[' ']'
-	| '[' I_CONSTANT ']'
+enum_body_item
+	: IDENTIFIER
+	| IDENTIFIER '=' expression
 	;
-
-/* variable_declaration_item_function
-	: function_declaration_qualifier_block IDENTIFIER
-	;
-
-function_declaration_qualifier_block
-	: type_ref params_declaration // 新增语法 - 匿名函数
-	; */
 
 block_declaration
 	: '{'  '}'
 	| '{' block_statements '}'
 	| block_statement
 	| block_statement BREAK
-	;
-
-block_statement
-	: ';'
-	| if_statement
-	| for_statement
-	| while_statement
-	| switch_statement
-	| return_statement
-	| expression_statement
-	| type_declaration  ';'
-	| variable_declaration  ';'
 	;
 
 block_statements
@@ -198,6 +180,10 @@ expression_statement
 	: expression ';'
 	;
 
+assignment_statement
+	: expression assignment_op expression ';'
+	;
+
 expressions
 	: expression
 	| expressions ',' expression
@@ -205,11 +191,10 @@ expressions
 
 expression
 	: op_expression
-	| case_expression
 	| call_expression
 	| variable_ref_expression
-	| variable_decl_expression
-	| constant_expressions
+	| value_blockdecl_expression
+	| constant_expression
 	| '(' expression ')'
 	| '(' type_ref ')' expression
 	;
@@ -220,54 +205,79 @@ op_expression
 	| expression bit_op expression
 	| expression math_op expression
 	| expression logical_op expression
-	| expression assignment_op expression
 	| expression '?' expression ':' expression
 	;
 
-call_expression
-	: name_ref params_assignment 
+case_statement
+	: DEFAULT ':' block_declaration
+	| CASE IDENTIFIER ':' block_declaration
+	| CASE expressions ':' block_declaration
 	;
 
-case_expression
-	: CASE expressions ':' block_declaration
+call_expression
+	: variable_ref_expression params_assignment 
+	;
+
+constant_expression
+	: I_CONSTANT	/* includes character_constant */
+	| F_CONSTANT
+	| STRING_LITERAL
+	| ENUMERATION_CONSTANT	/* after it has been defined as such */
+	;
+
+type_ref 
+	: IDENTIFIER '*'
+	| type_ref_qualifier
+	| type_ref type_ref_qualifier
 	;
 
 variable_ref_expression
-	: variable_ref
+	: variable_ref_pkgname
+	| pointer_ops variable_ref_expression
+	| expression variable_ref_subfields
 	;
 
-variable_ref
-	: name_ref
-	| '(' variable_ref ')'
-	| pointer_ops variable_ref
-	| variable_ref variable_ref_sub_field
+value_blockdecl_expression
+	: '[' value_blockdecl_expression_items ']'
+	| '[' value_blockdecl_expression_items ',' ']'
+	| '{' value_blockdecl_expression_items '}'
+	| '{' value_blockdecl_expression_items ',' '}'
 	;
 
-name_ref
-	: IDENTIFIER
-	| IDENTIFIER ':' IDENTIFIER // 新增语法 - 定义静态方法, 引用指定上下文内容
+value_blockdecl_expression_items
+	: value_blockdecl_expression_item
+	| value_blockdecl_expression_item
+	| value_blockdecl_expression_items ',' value_blockdecl_expression_item
 	;
 
-variable_ref_sub_field
-	: '.' name_ref
-	| PTR_OP name_ref
-	;
-
-variable_decl_expression
-	: '[' variable_subfield_expressions ']'
-	/* | '[' variable_expression_items ',' ']' */
-	| '{' variable_subfield_expressions '}'
-	/* | '{' variable_expression_items ',' '}' */
-	;
-
-variable_subfield_expressions
-	: variable_subfield_expression
-	| variable_subfield_expressions ',' variable_subfield_expression
-	;
-
-variable_subfield_expression
+value_blockdecl_expression_item
 	: expression
 	| '.' IDENTIFIER '=' expression
+	;
+
+variable_declaration_names
+	: variable_declaration_name
+	| variable_declaration_names ',' variable_declaration_name
+	;
+
+variable_declaration_name
+	: variable_declaration_name_uninit
+	| variable_declaration_name_uninit '=' expression
+	;
+
+variable_declaration_name_uninit
+	: IDENTIFIER
+	| IDENTIFIER variable_declaration_name_arrayops
+	;
+
+variable_declaration_name_arrayops
+	: variable_declaration_name_arrayop
+	| variable_declaration_name_arrayops variable_declaration_name_arrayop
+	;
+
+variable_declaration_name_arrayop
+	: '[' ']'
+	| '[' I_CONSTANT ']'
 	;
 
 variable_storage_qualifier
@@ -277,49 +287,53 @@ variable_storage_qualifier
 	| REGISTER
 	;
 
-constant_expressions
-	: I_CONSTANT	/* includes character_constant */
-	| F_CONSTANT
-	| STRING_LITERAL
-	| ENUMERATION_CONSTANT	/* after it has been defined as such */
+type_body_items
+	: variable_declaration ';'
+	| type_body_items variable_declaration ';'
 	;
 
-type_ref 
-	: type_ref_item
-	| type_ref type_ref_item
-	;
-
-type_ref_item 
+type_ref_qualifier 
 	: type_qualifier
-	| type_declarator
+	| type_specifier
 	;
 
-type_declarator
-	: IDENTIFIER
-	| type_block_qualifier
-	| type_pointer_qualifier
+type_specifier
+	: variable_ref_pkgname
+	| enum_declaration
+	| type_block_specifier
+	| type_pointer_specifier
 	| type_keyword_normal_specifier
 	| type_keyword_havesign_specifier
 	;
+	
+type_block_specifier
+	: type_block_qualifier IDENTIFIER
+	| type_block_qualifier type_block_body
+	| type_block_qualifier IDENTIFIER type_block_body
+	;
+	
+type_block_qualifier
+	: UNION
+	| STRUCT
+	;
 
-type_pointer_qualifier
+type_block_body
+	: '{' '}'
+	| '{' type_body_items '}'
+	;
+
+type_pointer_specifier
 	: pointer_ops
-	| type_pointer_qualifier type_pointer_access_qualifier
+	| type_pointer_specifier type_pointer_access_qualifier
 	;
 
 type_pointer_access_qualifier
 	: RESTRICT
 	| type_access_qualifier
 	;
-	
-type_block_qualifier
-	: STRUCT
-	| UNION
-	;
 
 type_keyword_normal_specifier
 	: VOID 
-	| ENUM
 	| BOOL
 	| IMAGINARY	  	/* non-mandated extension */
 	;
@@ -337,7 +351,6 @@ type_keyword_havesign_specifier
 type_qualifier
 	: type_sign_qualifier
 	| type_access_qualifier
-	/* | variable_storage_qualifier */
 	;
 	
 type_sign_qualifier
@@ -351,6 +364,15 @@ type_access_qualifier
 	| VOLATILE
 	;
 
+function_qualifier
+	: type_ref variable_ref_pkgname params_declaration
+	| type_ref '(' function_qualifier_self_variable ')' IDENTIFIER params_declaration // 新增语法 - 定义成员方法
+	;
+
+function_qualifier_self_variable
+	: type_ref IDENTIFIER
+	;
+
 params_assignment
 	: '(' ')'
 	| '(' expressions ')'
@@ -362,8 +384,32 @@ params_declaration
 	;
 	
 params_declaration_items
-	: variable_declaration
-	| params_declaration_items ',' variable_declaration
+	: variable_name_havetype
+	| params_declaration_items ',' variable_name_havetype
+	;
+	
+variable_name_havetype
+	: variable_declaration_name
+	| type_ref variable_declaration_name
+	| variable_storage_qualifier type_ref variable_declaration_name
+	;
+
+variable_ref_pkgname
+	: variable_ref_name
+	| variable_ref_pkgname ':' variable_ref_name // 新增语法 - 定义静态方法, 引用指定上下文内容
+	;
+
+variable_ref_name
+	: IDENTIFIER
+	;
+
+variable_ref_subfields
+	: variable_ref_subfield
+	| variable_ref_subfields variable_ref_subfield
+	;
+
+variable_ref_subfield
+	: variable_subfield_op variable_ref_pkgname
 	;
 
 pointer_op
@@ -374,6 +420,11 @@ pointer_op
 pointer_ops
 	: pointer_op
 	| pointer_ops pointer_op
+	;
+
+variable_subfield_op
+	: '.'
+	| PTR_OP
 	;
 
 unary_op

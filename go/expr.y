@@ -37,6 +37,7 @@
 	bvalfields []varblocksubfield
 	op opexpr
 	call callexpr
+	fself funcself
 	valitem vardeclval
 	valitems []vardeclval
 	typetyp typedecltype
@@ -47,7 +48,7 @@
 %token	<lval>	IDENTIFIER
 
 %token	<lval> IGNORE
-%token  <lval> '(' ')' '{' '}' ':' ',' '?'
+%token  <lval> '(' ')' '{' '}' ':' ',' '?' '*'
 
 %token	<lval> I_CONSTANT F_CONSTANT STRING_LITERAL FUNC_NAME SIZEOF
 %token	<lval> PTR_OP INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
@@ -99,11 +100,11 @@
 // function
 %type <fun> function_declaration  
 %type <fref> function_qualifier
-%type <val> function_qualifier_self_variable
+%type <fself> function_qualifier_self_variable
 /* %type <fref> function_declaration_qualifier_block */
 
 // reference
-%type <nref> variable_ref_name variable_ref_pkg_name
+%type <nref> variable_ref_name variable_ref_pkgname
 %type <vrefField> variable_subfield_op variable_ref_subfield
 %type <vrefFields> variable_ref_subfields
 
@@ -112,12 +113,12 @@
 %type <call> call_expression
 %type <lval> constant_expression
 %type <vref> variable_ref_expression
-%type <expr> expression expression_statement case_expression
+%type <expr> expression expression_statement
 %type <exprs> expressions params_assignment
 
 // statement
 %type <ret> return_statement
-%type <stmt> global_statement block_statement if_statement for_statement while_statement switch_statement 
+%type <stmt> global_statement block_statement if_statement for_statement case_statement while_statement switch_statement 
 %type <stmts> block_declaration block_statements 
 
 %%
@@ -129,9 +130,6 @@ global_statements
 
 global_statement
 	: ';'
-	| IGNORE						{ $$.Stmt = $1; dump_lval($1); }
-	| COMMENT						{ $$.Stmt = $1; dump_lval($1); }
-	| BLOCK_COMMENT					{ $$.Stmt = $1; dump_lval($1); }
 	| IDENTIFIER ';'				{ $$.Stmt = $1; dump_lval($1); }
 	| enum_declaration ';'			{ $$.Stmt = $1; dump_lval($1); }
 	| type_declaration ';'			{ $$.Stmt = $1; dump_lval($1); }
@@ -140,10 +138,26 @@ global_statement
 	| function_declaration   		{ $$.Stmt = $1; dump_lval($1); }
 	;
 
+block_statement
+	: ';'
+	| BREAK ';'
+	| if_statement { $$ = $1; $$.Typ = stmtIf; }
+	| for_statement { $$ = $1; $$.Typ = stmtFor }
+	| case_statement { $$ = $1; $$.Typ = stmtCase }
+	| while_statement { $$ = $1; $$.Typ = stmtWhile }
+	| switch_statement { $$ = $1; $$.Typ = stmtSwitch }
+	| return_statement { $$.Stmt = $1; $$.Typ = stmtReturn; dump_lval($1); }
+	| expression_statement { $$.Stmt = $1; $$.Typ = stmtExpr; dump_lval($1); }
+	| assignment_statement  { $$.Stmt = $1; $$.Typ = stmtVarDecl; dump_lval($1); }
+	| enum_declaration  ';' { $$.Stmt = $1; $$.Typ = stmtEnumDecl; dump_lval($1); }
+	| type_declaration  ';' { $$.Stmt = $1; $$.Typ = stmtTypeDecl; dump_lval($1); }
+	| variable_declaration  ';' { $$.Stmt = $1; $$.Typ = stmtVarDecl; dump_lval($1); }
+	;
+
 function_declaration
-	: function_qualifier block_declaration { $$.Typ = $1; $$.Block = $2; }
-	| INLINE function_qualifier block_declaration { $$.Typ = $2; $$.Block = $3; }
-	| variable_storage_qualifier function_qualifier block_declaration { $$.Typ = $2; $$.Block = $3; }
+	: function_qualifier block_declaration 								{ $$.Typ = $1; $$.Body = NewFuncSymbolTable($$, $2...); }
+	| INLINE function_qualifier block_declaration 						{ $$.Typ = $2; $$.Body = NewFuncSymbolTable($$, $3...); }
+	| variable_storage_qualifier function_qualifier block_declaration 	{ $$.Typ = $2; $$.Body = NewFuncSymbolTable($$, $3...); }
 	;
 	
 enum_declaration
@@ -152,6 +166,7 @@ enum_declaration
 
 type_declaration
 	: type_block_specifier						{ $$ = $1; }
+	| type_block_specifier variable_declaration_names { $$ = $1; $$.Values = append($$.Values, $2...); }
 	;
 
 typedef_declaration
@@ -185,20 +200,6 @@ block_declaration
 	| '{' block_statements '}' { $$ = append($$, $2...) }
 	| block_statement   { $$ = append($$, $1) }
 	| block_statement BREAK   { $$ = append($$, $1) }
-	;
-
-block_statement
-	: ';'
-	| if_statement { $$ = $1; $$.Typ = stmtIf; }
-	| for_statement { $$ = $1; $$.Typ = stmtFor }
-	| while_statement { $$ = $1; $$.Typ = stmtWhile }
-	| switch_statement { $$ = $1; $$.Typ = stmtSwitch }
-	| return_statement { $$.Stmt = $1; $$.Typ = stmtReturn; dump_lval($1); }
-	| expression_statement { $$.Stmt = $1; $$.Typ = stmtExpr; dump_lval($1); }
-	| assignment_statement  { $$.Stmt = $1; $$.Typ = stmtVarDecl; dump_lval($1); }
-	| enum_declaration  ';' { $$.Stmt = $1; $$.Typ = stmtEnumDecl; dump_lval($1); }
-	| type_declaration  ';' { $$.Stmt = $1; $$.Typ = stmtTypeDecl; dump_lval($1); }
-	| variable_declaration  ';' { $$.Stmt = $1; $$.Typ = stmtVarDecl; dump_lval($1); }
 	;
 
 block_statements
@@ -247,7 +248,6 @@ expressions
 
 expression
 	: op_expression { $$.Expr = $1; $$.Typ = exprOp; }
-	| case_expression
 	| call_expression { $$.Expr = $1; $$.Typ = exprCall; }
 	| variable_ref_expression { $$.Expr = $1; $$.Typ = exprVar; }
 	| value_blockdecl_expression { $$.Expr = $1; $$.Typ = exprVar; }
@@ -265,8 +265,10 @@ op_expression
 	| expression '?' expression ':' expression  		{ $$.Op = $2.text; $$.L = $1; $$.R = $3; $$.There = $5 }
 	;
 
-case_expression
-	: CASE expressions ':' block_declaration
+case_statement
+	: DEFAULT ':' block_declaration
+	| CASE IDENTIFIER ':' block_declaration
+	| CASE expressions ':' block_declaration
 	;
 
 call_expression
@@ -281,26 +283,27 @@ constant_expression
 	;
 
 type_ref 
-	: type_ref_qualifier { $$.Ref = append($$.Ref, $1.text); $$.Typ = typedeclRef; }
-	| type_ref type_ref_qualifier { $$.Ref = append($1.Ref, $2.text); $$.Typ = typedeclRef; }
+	: type_ref_qualifier 			{ $$.Ref = append($$.Ref, $1.text); $$.Typ = typedeclRef; }
+	| IDENTIFIER pointer_ops		{ $$.Ref = append($$.Ref, $1.text); $$.Ref = append($$.Ref, $2.text); $$.Typ = typedeclRef; }
+	| type_ref type_ref_qualifier 	{ $$.Ref = append($1.Ref, $2.text); $$.Typ = typedeclRef; }
 	;
 
 variable_ref_expression
-	: variable_ref_name 											{ $$.Parent = $1; }
-	| variable_ref_pkg_name 										{ $$.Parent = $1; }
+	: variable_ref_pkgname 										{ $$.Parent = $1; }
 	| pointer_ops variable_ref_expression									{ $$.Parent = $2; $$.Ops = append($$.Ops, $1.text) }
 	| expression variable_ref_subfields								{ $$.Parent = $1; $$.Fields = append($$.Fields, $2...); }
 	;
 
 value_blockdecl_expression
 	: '[' value_blockdecl_expression_items ']' { $$.Fields = $2; $$.Arr = true; }
-	/* | '[' variable_expression_items ',' ']' */
+	| '[' value_blockdecl_expression_items ',' ']'
 	| '{' value_blockdecl_expression_items '}' { $$.Fields = $2; $$.Arr = false; }
-	/* | '{' variable_expression_items ',' '}' */
+	| '{' value_blockdecl_expression_items ',' '}'
 	;
 
 value_blockdecl_expression_items
 	: value_blockdecl_expression_item			{ $$ = append($$,$1); }
+	| value_blockdecl_expression_item		{ $$ = append($$,$1); }
 	| value_blockdecl_expression_items ',' value_blockdecl_expression_item { $$ = append($1,$3); }
 	;
 
@@ -352,7 +355,7 @@ type_ref_qualifier
 	;
 
 type_specifier
-	: variable_ref_name
+	: variable_ref_pkgname
 	| enum_declaration
 	| type_block_specifier
 	| type_pointer_specifier
@@ -419,13 +422,12 @@ type_access_qualifier
 	;
 
 function_qualifier
-	: type_ref variable_ref_name params_declaration { $$.Retval = $1; $$.Name = $2; $$.Params = $3; }
-	| type_ref variable_ref_pkg_name params_declaration { $$.Retval = $1; $$.Name = $2; $$.Params = $3; }
-	| type_ref '(' function_qualifier_self_variable ')' IDENTIFIER params_declaration { $$.Retval = $1; $$.Name.Name = $5.text; $$.Params = append(append($$.Params,$3),$6...); $$.Typ = functionSelf; } // 新增语法 - 定义成员方法
+	: type_ref variable_ref_pkgname params_declaration { $$.Retval = $1; $$.Name = $2; $$.Params = $3; }
+	| type_ref '(' function_qualifier_self_variable ')' IDENTIFIER params_declaration { $$.Retval = $1; $$.Name.Name = $5.text;  $$.Self = $3; $$.Params = $6; $$.Typ = functionSelf; } // 新增语法 - 定义成员方法
 	;
 
 function_qualifier_self_variable
-	: type_ref IDENTIFIER { $$.RefType = $1; $$.Name = $2.text; $$.Typ = varSelf; }
+	: type_ref IDENTIFIER { $$.Typ = $1; $$.Name = $2.text; }
 	;
 
 params_assignment
@@ -444,17 +446,18 @@ params_declaration_items
 	;
 	
 variable_name_havetype
-	: variable_declaration_name 									{ $$.Values = append($$.Values, $1); }
-	| type_ref variable_declaration_name 							{ $$.RefType = $1; $$.Values = append($$.Values, $2); }
-	| variable_storage_qualifier type_ref variable_declaration_name 	{ $$.RefType = $2; $$.Values = append($$.Values, $3); $$.Storage = $1.text; }
+	: variable_declaration_name 										{ $$.Values = append($$.Values, $1); $$.Typ = varType; }
+	| type_ref variable_declaration_name 								{ $$.Values = append($$.Values, $2); $$.Typ = varType; $$.RefType = $1; }
+	| variable_storage_qualifier type_ref variable_declaration_name 	{ $$.Values = append($$.Values, $3); $$.Typ = varType; $$.RefType = $2; $$.Storage = $1.text; }
+	;
+
+variable_ref_pkgname
+	: variable_ref_name
+	| variable_ref_pkgname ':' variable_ref_name // 新增语法 - 定义静态方法, 引用指定上下文内容
 	;
 
 variable_ref_name
 	: IDENTIFIER { $$.Name = $1.text; }
-	;
-
-variable_ref_pkg_name
-	: IDENTIFIER ':' IDENTIFIER { $$.Name = $3.text; $$.Pkgs = append($$.Pkgs, $1.text); } // 新增语法 - 定义静态方法, 引用指定上下文内容
 	;
 
 variable_ref_subfields
@@ -463,8 +466,7 @@ variable_ref_subfields
 	;
 
 variable_ref_subfield
-	: variable_subfield_op variable_ref_name { $$.Name = $2; $$.Ptr = $1.Ptr; }
-	| variable_subfield_op variable_ref_pkg_name { $$.Name = $2; $$.Ptr = $1.Ptr; }
+	: variable_subfield_op variable_ref_pkgname { $$.Name = $2; $$.Ptr = $1.Ptr; }
 	;
 
 pointer_op
@@ -569,12 +571,13 @@ func dump_lval(val interface{}) {
 	valueStr := msg
 
 	switch v := val.(type) {
+	case nil:
 	case function:
 		fmt.Printf("\n>>>>>>>>>>\n%s", valueStr)
 	case expression:
 		dump_lval(v.Expr);
 	case varref:
-			fmt.Printf("<%s>", valueStr)
+			fmt.Printf("<%s>[varref]", valueStr)
 	default:
 		/* fmt.Printf(" >> %s", valueStr) */
 		typeName := reflect.TypeOf(val).Name()
