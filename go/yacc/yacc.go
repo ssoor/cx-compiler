@@ -104,9 +104,11 @@ const (
 // output parser flags
 const yyFlag = -1000
 
+type parseToken int
+
 // parse tokens
 const (
-	IDENTIFIER = PRIVATE + iota
+	IDENTIFIER parseToken = PRIVATE + iota
 	MARK
 	TERM
 	LEFT
@@ -302,7 +304,7 @@ var adb = 1     // debugging for callopt
 
 type Resrv struct {
 	name  string
-	value int
+	value parseToken
 }
 
 var resrv = []Resrv{
@@ -411,7 +413,7 @@ outer:
 			if t != IDENTIFIER {
 				errorf("bad %%start construction")
 			}
-			start = chfind(1, tokname)
+			start = symbolFind(1, tokname)
 
 		case ERROR:
 			lno := lineno
@@ -444,7 +446,7 @@ outer:
 				t = gettok()
 				switch t {
 				case IDENTIFIER:
-					t = chfind(1, tokname)
+					t = parseToken(symbolFind(1, tokname))
 					if t < NTBASE {
 						j = TYPE(toklev[t])
 						if j != 0 && j != ty {
@@ -500,7 +502,7 @@ outer:
 					// Do nothing.
 
 				case IDENTIFIER:
-					j = chfind(0, tokname)
+					j = symbolFind(0, tokname)
 					if j >= NTBASE {
 						errorf("%v defined earlier as nonterminal", tokname)
 					}
@@ -508,7 +510,7 @@ outer:
 						if ASSOC(toklev[j]) != 0 {
 							errorf("redeclaration of precedence of %v", tokname)
 						}
-						toklev[j] = SETASC(toklev[j], lev)
+						toklev[j] = SETASC(toklev[j], int(lev))
 						toklev[j] = SETPLEV(toklev[j], i)
 					}
 					if ty != 0 {
@@ -552,7 +554,7 @@ outer:
 	}
 
 	if start == 0 {
-		prdptr[0][1] = chfind(1, tokname)
+		prdptr[0][1] = symbolFind(1, tokname)
 	}
 
 	// read rules
@@ -571,7 +573,7 @@ outer:
 			curprod[mem] = prdptr[nprod-1][0]
 			mem++
 		} else if t == IDENTCOLON {
-			curprod[mem] = chfind(1, tokname)
+			curprod[mem] = symbolFind(1, tokname)
 			if curprod[mem] < NTBASE {
 				lerrorf(ruleline, "token illegal on LHS of grammar rule")
 			}
@@ -584,7 +586,7 @@ outer:
 		t = gettok()
 		for {
 			for t == IDENTIFIER {
-				curprod[mem] = chfind(1, tokname)
+				curprod[mem] = symbolFind(1, tokname)
 				if curprod[mem] < NTBASE {
 					levprd[nprod] = toklev[curprod[mem]]
 				}
@@ -600,7 +602,7 @@ outer:
 				if gettok() != IDENTIFIER {
 					lerrorf(ruleline, "illegal %%prec syntax")
 				}
-				j = chfind(2, tokname)
+				j = symbolFind(2, tokname)
 				if j >= NTBASE {
 					lerrorf(ruleline, "nonterminal "+nontrst[j-NTBASE].name+" illegal after %%prec")
 				}
@@ -619,7 +621,7 @@ outer:
 			t = gettok()
 			if t == IDENTIFIER {
 				// make it a nonterminal
-				j = chfind(1, fmt.Sprintf("$$%v", nprod))
+				j = symbolFind(1, fmt.Sprintf("$$%v", nprod))
 
 				//
 				// the current rule will become rule number nprod+1
@@ -713,6 +715,15 @@ outer:
 	}
 	fmt.Fprintf(ftable, "}\n")
 
+	// put out names map of tokens
+	ftable.WriteRune('\n')
+	fmt.Fprintf(ftable, "type %sSymb struct {name    string;noconst bool;value   int;	}\n", prefix)
+	fmt.Fprintf(ftable, "var %sTrstnameMap = map[int]%sSymb{\n", prefix, prefix)
+	for i := 1; i <= nnonter; i++ {
+		fmt.Fprintf(ftable, "\t%d:%sSymb{value:%d, name:%q},\n", i, prefix, nontrst[i].value, nontrst[i].name)
+	}
+	fmt.Fprintf(ftable, "}\n")
+
 	// put out names of states.
 	// commented out to avoid a huge table just for debugging.
 	// re-enable to have the names in the binary.
@@ -766,9 +777,9 @@ func moreprod() {
 
 // define s to be a terminal if nt==0
 // or a nonterminal if nt==1
-func defin(nt int, s string) int {
+func defin(nonterminal int, s string) int {
 	val := 0
-	if nt != 0 {
+	if nonterminal != 0 {
 		nnonter++
 		if nnonter >= len(nontrst) {
 			anontrst := make([]Symb, nnonter+SYMINC)
@@ -825,7 +836,7 @@ func defin(nt int, s string) int {
 
 var peekline = 0
 
-func gettok() int {
+func gettok() parseToken {
 	var i int
 	var match, c rune
 
@@ -968,7 +979,7 @@ func gettok() int {
 		if tokflag {
 			fmt.Printf(">>> OPERATOR %v %v\n", string(c), lineno)
 		}
-		return int(c)
+		return parseToken(c)
 	}
 
 	// look ahead to distinguish IDENTIFIER from IDENTCOLON
@@ -1024,7 +1035,7 @@ func fdtype(t int) int {
 	return v
 }
 
-func chfind(t int, s string) int {
+func symbolFind(t int, s string) int {
 	if s[0] == '"' || s[0] == '\'' {
 		t = 0
 	}
@@ -1322,7 +1333,7 @@ loop:
 				if gettok() != IDENTIFIER {
 					errorf("$ must be followed by an identifier")
 				}
-				tokn := chfind(2, tokname)
+				tokn := symbolFind(2, tokname)
 				fnd := -1
 				c = getrune(finput)
 				if c != '@' {
@@ -1480,9 +1491,9 @@ func symnam(i int) string {
 }
 
 // set elements 0 through n-1 to c
-func aryfil(v []int, n, c int) {
-	for i := 0; i < n; i++ {
-		v[i] = c
+func arrayFill(fillArr []int, fillLen, fillVal int) {
+	for i := 0; i < fillLen; i++ {
+		fillArr[i] = fillVal
 	}
 }
 
@@ -1536,7 +1547,7 @@ func cempty() {
 
 	// first, use the array pempty to detect productions that can never be reduced
 	// set pempty to WHONOWS
-	aryfil(pempty, nnonter+1, WHOKNOWS)
+	arrayFill(pempty, nnonter+1, WHOKNOWS)
 
 	// now, look at productions, marking nonterminals which derive something
 more:
@@ -1580,7 +1591,7 @@ more:
 
 	// now, compute the pempty array, to see which nonterminals derive the empty string
 	// set pempty to WHOKNOWS
-	aryfil(pempty, nnonter+1, WHOKNOWS)
+	arrayFill(pempty, nnonter+1, WHOKNOWS)
 
 	// loop as long as we keep finding empty nonterminals
 
@@ -1688,7 +1699,7 @@ func stagen() {
 	clset = mkset()
 	pstate[0] = 0
 	pstate[1] = 0
-	aryfil(clset, tbitset, 0)
+	arrayFill(clset, tbitset, 0)
 	putitem(Pitem{prdptr[0], 0, 0, 0}, clset)
 	tystate[0] = MUSTDO
 	nstate = 1
@@ -1710,7 +1721,7 @@ func stagen() {
 			}
 
 			tystate[i] = DONE
-			aryfil(temp1, nnonter+1, 0)
+			arrayFill(temp1, nnonter+1, 0)
 
 			// take state i, close it, and do gotos
 			closure(i)
@@ -1798,7 +1809,7 @@ func closure(i int) {
 			}
 
 			// compute the lookahead
-			aryfil(clset, tbitset, 0)
+			arrayFill(clset, tbitset, 0)
 
 			// find items involving c
 			for v := u; v < cwp; v++ {
@@ -2133,7 +2144,7 @@ func output() {
 
 		// output actions
 		nolook = 1
-		aryfil(temp1, ntokens+nnonter+1, 0)
+		arrayFill(temp1, ntokens+nnonter+1, 0)
 		for u = 0; u < cwp; u++ {
 			c = wsets[u].pitem.first
 			if c > 1 && c < NTBASE && temp1[c] == 0 {
@@ -2459,7 +2470,7 @@ func go2gen(c int) {
 	var i, cc, p, q int
 
 	// first, find nonterminals with gotos on c
-	aryfil(temp1, nnonter+1, 0)
+	arrayFill(temp1, nnonter+1, 0)
 	temp1[c] = 1
 	work := 1
 	for work != 0 {
@@ -2490,7 +2501,7 @@ func go2gen(c int) {
 	}
 
 	// now, go through and put gotos into tystate
-	aryfil(tystate, nstate, 0)
+	arrayFill(tystate, nstate, 0)
 	for i = 0; i < nstate; i++ {
 		q = pstate[i+1]
 		for p = pstate[i]; p < q; p++ {
@@ -2775,7 +2786,7 @@ func others() {
 	var i, j int
 
 	arout("R1", levprd, nprod)
-	aryfil(temp1, nprod, 0)
+	arrayFill(temp1, nprod, 0)
 
 	//
 	//yyr2 is the number of rules for each production
@@ -2785,7 +2796,7 @@ func others() {
 	}
 	arout("R2", temp1, nprod)
 
-	aryfil(temp1, nstate, -1000)
+	arrayFill(temp1, nstate, -1000)
 	for i = 0; i <= ntokens; i++ {
 		for j := tstates[i]; j != 0; j = mstates[j] {
 			temp1[j] = i
@@ -2801,7 +2812,7 @@ func others() {
 
 	// put out token translation tables
 	// table 1 has 0-256
-	aryfil(temp1, 256, 0)
+	arrayFill(temp1, 256, 0)
 	c := 0
 	for i = 1; i <= ntokens; i++ {
 		j = tokset[i].value
@@ -2825,7 +2836,7 @@ func others() {
 	arout("Tok1", temp1, c+1)
 
 	// table 2 has PRIVATE-PRIVATE+256
-	aryfil(temp1, 256, 0)
+	arrayFill(temp1, 256, 0)
 	c = 0
 	for i = 1; i <= ntokens; i++ {
 		j = tokset[i].value - PRIVATE
@@ -2900,7 +2911,7 @@ func runMachine(tokens []string) (state, token int) {
 
 Loop:
 	if token < 0 {
-		token = chfind(2, tokens[i])
+		token = symbolFind(2, tokens[i])
 		i++
 	}
 
@@ -3258,6 +3269,16 @@ func $$Tokname(c int) string {
 	}
 	return __yyfmt__.Sprintf("tok-%v", c)
 }
+
+func $$Trstname(c int) string {
+	name := __yyfmt__.Sprintf("tok-%v", c)
+	if trstname,exist := $$TrstnameMap[c]; exist {
+		name = trstname.name
+	}
+
+	return name
+}
+
 func $$Statname(s int) string {
 	if s >= 0 && s < len($$Statenames) {
 		if $$Statenames[s] != "" {
@@ -3465,7 +3486,8 @@ $$default:
 				}
 				/* the current p has no shift on "error", pop stack */
 				if $$Debug >= 1 {
-					__yyfmt__.Printf("error recovery pops state %d\n", $$S[$$p].yys)
+					__yyfmt__.Printf("error recovery pops state %s\n", $$Trstname($$S[$$p].yys))
+					// __yyfmt__.Printf("error recovery pops state %d\n", $$S[$$p].yys)
 				}
 				$$p--
 			}

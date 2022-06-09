@@ -34,7 +34,7 @@ FS  (f|F|l|L)
 IS  (((u|U)(l|L|ll|LL)?)|((l|L|ll|LL)(u|U)?))
 CP  (u|U|L)
 SP  (u8|u|U|L)
-ES  (\\(['"\?\\abfnrtv]|[0-7]{1,3}|x[a-fA-F0-9]+))
+unquote_char  (\\(['"\n\?\\abfnrtv]|[0-7]{1,3}|x[a-fA-F0-9]+))
 whitespace_separates  [ \t\v\n\f]
 
 %x block_comment
@@ -111,7 +111,7 @@ whitespace_separates  [ \t\v\n\f]
 {hexadecimal_prefix}{hexadecimal_number}+{IS}?				    { return node(I_CONSTANT); }
 {NZ}{decimal_number}*{IS}?				    { return node(I_CONSTANT); }
 "0"{octal_number}*{IS}?				    { return node(I_CONSTANT); }
-{CP}?"'"([^'\\\n]|{ES})+"'"		{ return node(I_CONSTANT); }
+{CP}?"'"([^'\\\n]|{unquote_char})+"'"		{ return node(I_CONSTANT); }
 
 {decimal_number}+{e_number}{FS}?				    { return node(F_CONSTANT); }
 {decimal_number}*"."{decimal_number}+{e_number}?{FS}?			{ return node(F_CONSTANT); }
@@ -120,7 +120,7 @@ whitespace_separates  [ \t\v\n\f]
 {hexadecimal_prefix}{hexadecimal_number}*"."{hexadecimal_number}+{p_number}{FS}?			{ return node(F_CONSTANT); }
 {hexadecimal_prefix}{hexadecimal_number}+"."{p_number}{FS}?			    { return node(F_CONSTANT); }
 
-({SP}?\"([^"\\\n]|{ES})*\"{whitespace_separates}*)+	{ return node(STRING_LITERAL); }
+({SP}?\"([^"\\\n]|{unquote_char})*\"{whitespace_separates}*)+	{ return node(STRING_LITERAL); }
 
 "..."					{ return node(ELLIPSIS); }
 
