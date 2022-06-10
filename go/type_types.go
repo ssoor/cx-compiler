@@ -124,19 +124,25 @@ func (m typedecl) String() string {
 
 		return strings.TrimSuffix(strings.TrimPrefix(msg, " "), " ")
 	case typedeclStruct:
-		msg = "struct " + m.Name + "{\n"
-		for _, v := range m.Fields {
-			msg += indentation + v.String() + ";\n"
-		}
+		msg = "struct " + m.Name
+		if len(m.Fields) != 0 {
+			msg += " {\n"
+			for _, v := range m.Fields {
+				msg += indentation + v.String() + ";\n"
+			}
 
-		msg += "}"
+			msg += "}"
+		}
 	case typedeclUnion:
-		msg = "union " + m.Name + "{\n"
-		for _, v := range m.Fields {
-			msg += indentation + v.String() + ";\n"
-		}
+		msg = "union " + m.Name
+		if len(m.Fields) != 0 {
+			msg += " {\n"
+			for _, v := range m.Fields {
+				msg += indentation + v.String() + ";\n"
+			}
 
-		msg += "}"
+			msg += "}"
+		}
 	default:
 		msg = fmt.Sprintf("!panic(%s)", reflect.TypeOf(m).String())
 	}

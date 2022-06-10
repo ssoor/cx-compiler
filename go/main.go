@@ -12,3 +12,18 @@
 // Expr is a simple expression evaluator that serves as a working example of
 // how to use Go's yacc implementation.
 package main
+
+import "sync"
+
+var (
+	stOnce      sync.Once
+	symbolTable SymbolTable
+)
+
+func ST() *SymbolTable {
+	stOnce.Do(func() {
+		symbolTable = NewSymbolTable()
+	})
+
+	return &symbolTable
+}

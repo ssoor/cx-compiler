@@ -63,6 +63,15 @@ type SymbolTable struct {
 	Statements []statement    `json:"block,omitempty"`
 }
 
+func (m SymbolTable) Source() string {
+	msg := ""
+	for _, stmt := range m.Statements {
+		msg += stmt.String() + "\n"
+	}
+
+	return msg
+}
+
 func (m SymbolTable) String() string {
 	msg := "{\n"
 
@@ -163,6 +172,10 @@ func (m *SymbolTable) AddStmt(stmt statement) {
 	case stmtBlock:
 	case stmtNone:
 	case stmtBreak:
+	case stmtTypeDef:
+	case stmtFuncDecl:
+	case stmtComment:
+	case stmtLineEnd:
 	default:
 		panic(fmt.Sprintf("unknown statement [%+v]", stmt.Typ))
 	}

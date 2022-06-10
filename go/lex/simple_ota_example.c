@@ -341,44 +341,6 @@ static int fun4(int p1) {
     return 1;
 }
 
-
-
-typedef struct string {
-    int len;
-    char ptr[1]; // '\0'
-} string;
-
-const char * (string* this) get() {
-    return this->ptr;
-}
-
-const char * (string* this) cat3(string* str,string* str2,string* str3) {
-    return this->ptr;
-}
-
-string* string:new(const char * ptr) {
-    int len = strlen(ptr);
-    string* str = malloc(sizeof(string)+len);
-    
-    struct string {
-        int len;
-        char ptr[1]; // '\0'
-    } string2 = 1,string3,string4 = string:new();
-
-    str->len = len;
-    return memcpy(str->ptr, ptr, len);
-}
-
-void string:free(string* str) {
-    int i = 0;
-    string* str = 1;
-    string* str[] = 1;
-    a string* str2 = 1;
-    
-
-    free(str);
-}
-
 // typedef int (*call[])();
 // typedef int (*calls[5])();
 
@@ -537,4 +499,42 @@ int fun_switch() {
             break;
         }
     }
+}
+
+
+
+typedef struct string {
+    int len;
+    char ptr[1]; // '\0'
+} string;
+
+const char * (string* this) get() {
+    return this->ptr;
+}
+
+const char * (string* this) cat3(string* str,string* str2,string* str3) {
+    return this->ptr;
+}
+
+string* string:new(const char * ptr) {
+    int len = strlen(ptr);
+    string* str = malloc(sizeof(string)+len);
+    
+    struct string {
+        int len;
+        char ptr[1]; // '\0'
+    } string2 = {0},string3,*string4 = string:new("string");
+
+    str->len = len;
+    return memcpy(str->ptr, ptr, len);
+}
+
+void string:free(string* str) {
+    int i = 0;
+    string* str1 = 0;
+    string* str2[] = {0};
+    string* str3 = 0;
+    
+
+    free(str);
 }

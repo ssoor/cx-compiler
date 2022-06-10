@@ -30,8 +30,9 @@ type lexVal struct {
 // The parser uses the type <prefix>Lex as a lexer. It must provide
 // the methods Lex(*<prefix>SymType) int and Error(string).
 type exprLex struct {
-	read *bufio.Reader
-	val  lexVal
+	readStr string
+	reader  *bufio.Reader
+	val     lexVal
 }
 
 func newLex(fileName string) (*exprLex, error) {
@@ -40,7 +41,10 @@ func newLex(fileName string) (*exprLex, error) {
 		return nil, err
 	}
 
-	return &exprLex{read: bufio.NewReader(bytes.NewBuffer(data))}, nil
+	return &exprLex{
+		readStr: "",
+		reader:  bufio.NewReader(bytes.NewBuffer(data)),
+	}, nil
 }
 
 // The parser calls this method to get each new token. This
@@ -61,10 +65,15 @@ func (x *exprLex) Lex(yylval *exprSymType) int {
 		x.val.length = x.number()
 		x.val.text += x.string(x.val.length)
 
-		fmt.Printf("%s", x.val.text)
-
-		if x.val.token == IGNORE {
-			continue
+		x.readStr += x.val.text
+		switch x.val.token {
+		case LINEEND:
+			x.val.token = 0
+		case COMMENT, BLOCK_COMMENT:
+			x.val.token = 0
+		case IGNORE:
+			x.val.token = 0
+			// ST().AddStmt(statement{Typ: stmtLineEnd, Stmt: x.val.text})
 		}
 
 		if x.val.token != 0 {
@@ -79,7 +88,7 @@ func (x *exprLex) Lex(yylval *exprSymType) int {
 
 // Lex a number.
 func (x *exprLex) number() int {
-	line, err := x.read.ReadString('\n')
+	line, err := x.reader.ReadString('\n')
 	if err != nil {
 		if err == io.EOF {
 			return -1
@@ -109,7 +118,7 @@ func (x *exprLex) string(size int) string {
 	}
 
 	data := make([]byte, size)
-	rlen, err := io.ReadFull(x.read, data)
+	rlen, err := io.ReadFull(x.reader, data)
 	if err != nil {
 		x.Error(err.Error())
 		return ""
@@ -134,7 +143,7 @@ func (x *exprLex) Error(s string) {
 		placen = blankn
 	}
 
-	msg := "\n"
+	msg := string(x.readStr) + "\n"
 	for i := 0; i < blankn; i++ {
 		msg += " "
 	}

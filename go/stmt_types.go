@@ -47,7 +47,7 @@ func (m statement) String() string {
 	case stmtBlock:
 		st := m.Stmt.(SymbolTable)
 		return st.String() + st.Debug()
-	case stmtVarDecl, stmtEnumDecl, stmtTypeDecl, stmtExpr:
+	case stmtVarDecl, stmtEnumDecl, stmtTypeDef, stmtTypeDecl, stmtExpr:
 		return infa2str(m.Stmt) + ";"
 	default:
 		return infa2str(m.Stmt)
@@ -198,6 +198,10 @@ func (m stmttype) String() string {
 		stmtVarDecl:  "vardecl",
 		stmtEnumDecl: "enumdecl",
 		stmtTypeDecl: "typedecl",
+		stmtTypeDef:  "typedef",
+		stmtFuncDecl: "funcdecl",
+		stmtComment:  "comment",
+		stmtLineEnd:  "\\n",
 	}[m]
 }
 
@@ -216,5 +220,9 @@ const (
 	stmtAssign
 	stmtVarDecl
 	stmtEnumDecl
+	stmtTypeDef
 	stmtTypeDecl
+	stmtFuncDecl
+	stmtComment
+	stmtLineEnd
 )

@@ -111,7 +111,7 @@ whitespace_separates  [ \t\v\n\f]
 {hexadecimal_prefix}{hexadecimal_number}+{IS}?				    { return node(I_CONSTANT); }
 {NZ}{decimal_number}*{IS}?				    { return node(I_CONSTANT); }
 "0"{octal_number}*{IS}?				    { return node(I_CONSTANT); }
-{CP}?"'"([^'\\\n]|{unquote_char})+"'"		{ return node(I_CONSTANT); }
+{CP}?"'"([^'\\]|{unquote_char})+"'"		{ return node(I_CONSTANT); }
 
 {decimal_number}+{e_number}{FS}?				    { return node(F_CONSTANT); }
 {decimal_number}*"."{decimal_number}+{e_number}?{FS}?			{ return node(F_CONSTANT); }
@@ -120,7 +120,7 @@ whitespace_separates  [ \t\v\n\f]
 {hexadecimal_prefix}{hexadecimal_number}*"."{hexadecimal_number}+{p_number}{FS}?			{ return node(F_CONSTANT); }
 {hexadecimal_prefix}{hexadecimal_number}+"."{p_number}{FS}?			    { return node(F_CONSTANT); }
 
-({SP}?\"([^"\\\n]|{unquote_char})*\"{whitespace_separates}*)+	{ return node(STRING_LITERAL); }
+({SP}?\"([^"\\]|{unquote_char})*\"{whitespace_separates}*)+	{ return node(STRING_LITERAL); }
 
 "..."					{ return node(ELLIPSIS); }
 
@@ -177,7 +177,6 @@ whitespace_separates  [ \t\v\n\f]
 ("}"|"%>")				{ return node('}'); }
 ("["|"<:")				{ return node('['); }
 ("]"|":>")				{ return node(']'); }
-
 
 {whitespace_separates}+					{ node(0); /* whitespace separates tokens */ }
 .					{ node(IGNORE); /* discard bad characters */ }

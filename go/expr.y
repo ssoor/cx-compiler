@@ -54,14 +54,9 @@
 	switchstmt switchstmt
 }
 
-%token	<lval> COMMENT BLOCK_COMMENT
+%token	<lval> COMMENT BLOCK_COMMENT LINEEND IGNORE
 
-%token	<lval>	IDENTIFIER
-
-%token	<lval> IGNORE
-%token  <lval> '(' ')' '{' '}' ':' ',' '?' '*'
-
-%token	<lval> I_CONSTANT F_CONSTANT STRING_LITERAL FUNC_NAME SIZEOF
+%token	<lval> IDENTIFIER I_CONSTANT F_CONSTANT STRING_LITERAL FUNC_NAME SIZEOF
 %token	<lval> PTR_OP INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
 %token	<lval> AND_OP OR_OP MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN ADD_ASSIGN
 %token	<lval> SUB_ASSIGN LEFT_ASSIGN RIGHT_ASSIGN AND_ASSIGN
@@ -79,6 +74,8 @@
 %token	<lval> CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN
 
 %token	<lval> ALIGNAS ALIGNOF ATOMIC GENERIC NORETURN STATIC_ASSERT THREAD_LOCAL
+
+%token  <lval> '(' ')' '{' '}' ':' ',' '?' '*'
 
 // token
 %type <lval> variable_storage_qualifier
@@ -147,19 +144,29 @@
 %%
 
 global_statements
-	: global_statement 						
-	| global_statement global_statements 	
+	: global_statement 		 				{ ST().AddStmt($1); }				
+	| global_statements global_statement	{ ST().AddStmt($2); }	
 	;
 
 global_statement
 	: ';'
-	| IDENTIFIER ';'				{ $$.Stmt = $1; dump_lval($1); }
-	| enum_declaration ';'			{ $$.Stmt = $1; dump_lval($1); }
-	| type_declaration ';'			{ $$.Stmt = $1; dump_lval($1); }
-	| typedef_declaration ';'		{ $$.Stmt = $1; dump_lval($1); }
-	| variable_declaration ';'   	{ $$.Stmt = $1; dump_lval($1); }
-	| function_declaration   		{ $$.Stmt = $1; dump_lval($1); }
+	| IDENTIFIER ';'				{ $$.Stmt = $1; $$.Typ = stmtNone; }
+	| typedef_declaration ';'		{ $$.Stmt = $1; $$.Typ = stmtTypeDef; }
+	| function_declaration   		{ $$.Stmt = $1; $$.Typ = stmtFuncDecl; }
+	| enum_declaration  ';' 		{ $$.Stmt = $1; $$.Typ = stmtEnumDecl; }
+	| type_declaration  ';' 		{ $$.Stmt = $1; $$.Typ = stmtTypeDecl; }
+	| variable_declaration  ';' 	{ $$.Stmt = $1; $$.Typ = stmtVarDecl; }
 	;
+
+/* global_statement
+	: ';'
+	| IDENTIFIER ';'				{ $$.Stmt = $1; $$.Typ = stmtNone; ST().AddStmt($$); }
+	| typedef_declaration ';'		{ $$.Stmt = $1; $$.Typ = stmtTypeDef; ST().AddStmt($$); }
+	| function_declaration   		{ $$.Stmt = $1; $$.Typ = stmtFuncDecl; ST().AddStmt($$); }
+	| enum_declaration  ';' 		{ $$.Stmt = $1; $$.Typ = stmtEnumDecl; ST().AddStmt($$); }
+	| type_declaration  ';' 		{ $$.Stmt = $1; $$.Typ = stmtTypeDecl; ST().AddStmt($$); }
+	| variable_declaration  ';' 	{ $$.Stmt = $1; $$.Typ = stmtVarDecl; ST().AddStmt($$); }
+	; */
 
 codeblock_declaration
 	: codeblock_statement  					{ $$.Body = $1; }
@@ -179,12 +186,12 @@ codeblock_statement
 	| case_statement { $$.Stmt = $1; $$.Typ = stmtCase }
 	| while_statement { $$.Stmt = $1; $$.Typ = stmtWhile }
 	| switch_statement { $$.Stmt = $1; $$.Typ = stmtSwitch; }
-	| return_statement { $$.Stmt = $1; $$.Typ = stmtReturn; dump_lval($1); }
-	| expression_statement { $$.Stmt = $1; $$.Typ = stmtExpr; dump_lval($1); }
-	| assignment_statement  { $$.Stmt = $1; $$.Typ = stmtVarDecl; dump_lval($1); }
-	| enum_declaration  ';' { $$.Stmt = $1; $$.Typ = stmtEnumDecl; dump_lval($1); }
-	| type_declaration  ';' { $$.Stmt = $1; $$.Typ = stmtTypeDecl; dump_lval($1); }
-	| variable_declaration  ';' { $$.Stmt = $1; $$.Typ = stmtVarDecl; dump_lval($1); }
+	| return_statement { $$.Stmt = $1; $$.Typ = stmtReturn; }
+	| expression_statement { $$.Stmt = $1; $$.Typ = stmtExpr; }
+	| assignment_statement  { $$.Stmt = $1; $$.Typ = stmtVarDecl; }
+	| enum_declaration  ';' { $$.Stmt = $1; $$.Typ = stmtEnumDecl; }
+	| type_declaration  ';' { $$.Stmt = $1; $$.Typ = stmtTypeDecl; }
+	| variable_declaration  ';' { $$.Stmt = $1; $$.Typ = stmtVarDecl; }
 	;
 
 brack_statement
@@ -592,7 +599,10 @@ func main() {
 		exprDebug, _ = strconv.Atoi(os.Args[2])
 	}
 
-	exprParse(lexer)
+	if exprParse(lexer) == 0 {
+		fmt.Println(ST().Source())
+	}
+
 }
 
 func dump_lval(val interface{}) {
@@ -616,17 +626,17 @@ func dump_lval(val interface{}) {
 
 	valueStr := msg
 
-	switch v := val.(type) {
+		typeName := reflect.TypeOf(val).Name()
+	switch val.(type) {
 	case nil:
 	case function:
-		fmt.Printf("\n>>>>>>>>>>\n%s\n", valueStr)
+		fmt.Printf("\n>>>>>>>>>>%s\n%s\n",typeName, valueStr)
 	case expression:
-		dump_lval(v.Expr);
+		/* dump_lval(v.Expr); */
 	case varref:
-			fmt.Printf("<%s>[varref]", valueStr)
+			/* fmt.Printf("<%s>[varref]", valueStr) */
 	default:
 		/* fmt.Printf(" >> %s", valueStr) */
-		typeName := reflect.TypeOf(val).Name()
-		fmt.Printf(" >> %s [%s]", valueStr, typeName)
+		/* fmt.Printf(" >> %s [%s]", valueStr, typeName) */
 	}
 }

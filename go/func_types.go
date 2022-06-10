@@ -48,6 +48,21 @@ func (m funcref) String() string {
 			extendMsg = " = " + infa2str(m.Ref.Value)
 		}
 	case functionSelf:
+		typName := ""
+		for _, v := range m.Self.Typ.Ref {
+			switch v {
+			case "*":
+			case "&":
+			default:
+				typName = v
+			}
+
+			if len(typName) != 0 {
+				break
+			}
+		}
+
+		name = typName + "_" + name
 		params = m.Self.String() + ", " + params
 	}
 
