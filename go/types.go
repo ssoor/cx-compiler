@@ -6,63 +6,21 @@ import (
 	"strings"
 )
 
-type nameref struct {
-	Name string   `json:"name,omitempty"`
-	Pkgs []string `json:"pkgs,omitempty"`
-}
+const indentation = "    "
 
-func (m nameref) MarshalJSON() ([]byte, error) {
+type expressions []expression
+
+func (m expressions) MarshalJSON() ([]byte, error) {
 	return []byte("\"" + m.String() + "\""), nil
 }
 
-func (m nameref) String() string {
-	pkgs := append([]string{}, m.Pkgs...)
-	return strings.Join(append(pkgs, m.Name), "_")
-}
-
-type statement struct {
-	Typ  stmttype    `json:"type,omitempty"`
-	Stmt interface{} `json:"stmt,omitempty"`
-}
-
-func (m statement) MarshalJSON() ([]byte, error) {
-	return []byte("\"" + m.String() + "\""), nil
-}
-
-func (m statement) String() string {
-	if str, ok := m.Stmt.(string); ok {
-		return str
+func (m expressions) String() string {
+	exprs := []string{}
+	for _, v := range m {
+		exprs = append(exprs, infa2str(v))
 	}
 
-	strm, ok := m.Stmt.(fmt.Stringer)
-	if !ok {
-		if m.Stmt == nil {
-			return "<nil>"
-		}
-		return fmt.Sprintf("!panic(%s)", reflect.TypeOf(m.Stmt).String())
-	}
-
-	return strm.String() + ";"
-}
-
-type returnstmt struct {
-	Expr interface{} `json:"expr,omitempty"`
-}
-
-func (m returnstmt) MarshalJSON() ([]byte, error) {
-	return []byte("\"" + m.String() + "\""), nil
-}
-
-func (m returnstmt) String() string {
-	strm, ok := m.Expr.(fmt.Stringer)
-	if !ok {
-		if m.Expr == nil {
-			return "<nil>"
-		}
-		return fmt.Sprintf("!panic(%s)", reflect.TypeOf(m.Expr).String())
-	}
-
-	return fmt.Sprintf("return %s", strm.String())
+	return strings.Join(exprs, ", ")
 }
 
 type expression struct {
@@ -76,6 +34,8 @@ func (m expression) MarshalJSON() ([]byte, error) {
 
 func (m expression) String() string {
 	switch m.Typ {
+	case exprNone:
+		return ""
 	case exprOp:
 		return infa2str(m.Expr)
 	case exprVar:
@@ -141,43 +101,6 @@ func (m callexpr) String() string {
 	return fmt.Sprintf("%s(%s)", m.Var.String(), params)
 }
 
-type stmttype int
-
-func (m stmttype) MarshalJSON() ([]byte, error) {
-	return []byte("\"" + m.String() + "\""), nil
-}
-
-func (m stmttype) String() string {
-	return map[stmttype]string{
-		stmtUnknown:  "unknown",
-		stmtIf:       "if",
-		stmtFor:      "for",
-		stmtCase:     "case",
-		stmtSwitch:   "switch",
-		stmtReturn:   "return",
-		stmtExpr:     "stmt_expr",
-		stmtAssign:   "=",
-		stmtVarDecl:  "vardecl",
-		stmtEnumDecl: "enumdecl",
-		stmtTypeDecl: "typedecl",
-	}[m]
-}
-
-const (
-	stmtUnknown stmttype = iota
-	stmtIf
-	stmtFor
-	stmtCase
-	stmtWhile
-	stmtSwitch
-	stmtReturn
-	stmtExpr
-	stmtAssign
-	stmtVarDecl
-	stmtEnumDecl
-	stmtTypeDecl
-)
-
 type exprtype int
 
 func (m exprtype) MarshalJSON() ([]byte, error) {
@@ -187,6 +110,7 @@ func (m exprtype) MarshalJSON() ([]byte, error) {
 func (m exprtype) String() string {
 	return map[exprtype]string{
 		exprUnknown:    "unknown",
+		exprNone:       "none",
 		exprOp:         "op",
 		exprVar:        "var",
 		exprCall:       "call",
@@ -197,6 +121,7 @@ func (m exprtype) String() string {
 
 const (
 	exprUnknown    exprtype = iota // 常规方法
+	exprNone                       // 空
 	exprOp                         // 计算
 	exprVar                        // 变量引用
 	exprVarBlock                   // 块变量定义

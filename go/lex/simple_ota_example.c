@@ -25,9 +25,9 @@ union union_t{ // 声明联合体
     // static int_t e;
     // extern int_t f;
     volatile int_t g;
-    volatile int_t g1[];
+    volatile int_t g1[1];
     volatile int_t g2[1];
-    volatile int_t g3[1][];
+    volatile int_t g3[1][1];
 };
 
 union union_t union_v1 = {0}; // 声明联合体变量
@@ -41,15 +41,15 @@ struct struct_t{ // 声明结构体
     // static int_t e;
     // extern int_t f;
     volatile int_t g;
-    volatile int_t g1[];
+    volatile int_t g1[1];
     volatile int_t g2[1];
-    volatile int_t g3[1][];
+    volatile int_t g3[1][1];
 };
 
 struct struct_t struct_v1 = {0}; // 声明结构体变量
 struct struct_t struct_v2 = {.a = 0, .b = 1}; // 声明结构体变量
 
-struct_v1;
+struct_v8;
 
 enum { // 声明枚举
     enum_a,
@@ -365,22 +365,6 @@ string* string:new(const char * ptr) {
         char ptr[1]; // '\0'
     } string2 = 1,string3,string4 = string:new();
 
-    switch (str) {
-        case 1:
-            a(b);
-            break;
-        case ENUM_A:
-            break;
-        case ENUM_B:
-            string* str = malloc(sizeof(string)+len);
-            break;
-        default:
-        {
-            string* str = malloc(sizeof(string)+len);
-            break;
-        }
-    }
-
     str->len = len;
     return memcpy(str->ptr, ptr, len);
 }
@@ -393,4 +377,164 @@ void string:free(string* str) {
     
 
     free(str);
+}
+
+// typedef int (*call[])();
+// typedef int (*calls[5])();
+
+int fun_if() {
+    int a = 1;
+    if (a) {
+        return 1;
+    }
+
+    if (!a) {
+        return 1;
+    }
+
+    if (a) {
+        return 1;
+    } else {
+        return 0;
+    }
+
+    if (a) {
+        return 1;
+    } else if (a == 2) {
+        return 2;
+    }
+
+    if (a) {
+        return 1;
+    } else {
+        if (a == 2) {
+            return 2;
+        }
+    }
+}
+
+int for_for() {
+    int a = 1;
+
+    for (int i = 0; i < 10;i ++) {
+        break;
+    }
+
+    for (int i = 0;;i < 10) {
+        break;
+    }
+
+    for (int i = 0; i < 10;) {
+        break;
+    }
+
+    for (; a < 10;a + 0) {
+        break;
+    }
+
+    for (; a < 10;) {
+        break;
+    }
+
+    for (a < 10;;) {
+        break;
+    }
+
+    for (;;a < 10) {
+        break;
+    }
+
+    for (;;) {
+        break;
+    }
+}
+
+int for_while() {
+    int a = 1;
+    do {
+        int b = 0;
+    } while(a);
+
+    while(a) {
+        int c = a + 0;
+        c++;
+    }
+}
+
+int fun_switch() {
+    int str = 0,a,b,c,d[1],e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,**z[1][1];
+    int (*calls[5])() = {0};
+
+    switch (str) {
+        case 1:
+        case enum_a:
+        default:
+            break;
+    }
+
+    switch (str) {
+        case 1: break;
+        case enum_a: break;
+        default: break;
+    }
+
+    switch (str) {
+        case 1: { break; }
+        case enum_a: { break; }
+        default: { break; }
+    }
+
+    switch (str) {
+        case 1:
+            break;
+        case enum_a:
+            break;
+        default:
+            break;
+    }
+
+    switch (str) {
+        case 1:
+        {
+            break;
+        }
+        case enum_a:
+        {
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
+
+    switch (str) {
+        case 1:
+            calls[0](a, b+c, d[1], sizeof(str) * a, e*f,g-h/i*s);
+            break;
+        case enum_a:
+            calls[0](a, b+c, d[1], sizeof(str) * a, e*f,g-h/i*s);
+            break;
+        default:
+            calls[0](a, b+c, d[1], sizeof(str) * a, e*f,g-h/i*s);
+            break;
+    }
+
+    switch (str) {
+        case 1:
+        {
+            calls[0](a, b+c, d[1], sizeof(str) * a, e*f,g-h/i*s);
+            break;
+        }
+        case enum_a:
+        {
+            calls[0](a, b+c, d[1], sizeof(str) * a, e*f,g-h/i*s);
+            break;
+        }
+        default:
+        {
+            calls[0](a, b+c, d[1], sizeof(str) * a, e*f,g-h/i*s);
+            break;
+        }
+    }
 }

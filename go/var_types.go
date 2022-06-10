@@ -8,11 +8,11 @@ import (
 
 // Storage? Typ+ Name([Arr])? (= Value)?
 type vardecl struct {
-	Storage string       `json:"storage,omitempty"`
-	Typ     vardecltype  `json:"type,omitempty"`
-	RefType typedecl     `json:"tref,omitempty"`
-	RefFunc function     `json:"fref,omitempty"`
-	Values  []vardeclval `json:"vals,omitempty"`
+	Storage string           `json:"storage,omitempty"`
+	Typ     vardecltype      `json:"type,omitempty"`
+	RefFunc funcref          `json:"fref,omitempty"`
+	RefType typedecl         `json:"tref,omitempty"`
+	Values  []vardeclvaldecl `json:"vals,omitempty"`
 }
 
 func (m vardecl) MarshalJSON() ([]byte, error) {
@@ -23,7 +23,7 @@ func (m vardecl) String() string {
 	msg := ""
 	switch m.Typ {
 	case varFunc:
-		// return m.RefFunc.String()
+		return m.RefFunc.String()
 	case varType:
 		valuesMsg := ""
 		for _, v := range m.Values {
@@ -43,21 +43,17 @@ func (m vardecl) String() string {
 	return msg
 }
 
-type vardeclval struct {
-	Name  string       `json:"name,omitempty"`
-	Arr   []vararrdecl `json:"arr,omitempty"`
-	Value interface{}  `json:"val,omitempty"` // expression
+type vardeclvaldecl struct {
+	Name  vardeclnametype `json:"name,omitempty"`
+	Value interface{}     `json:"val,omitempty"` // expression
 }
 
-func (m vardeclval) MarshalJSON() ([]byte, error) {
+func (m vardeclvaldecl) MarshalJSON() ([]byte, error) {
 	return []byte("\"" + m.String() + "\""), nil
 }
 
-func (m vardeclval) String() string {
-	msg := m.Name
-	for _, v := range m.Arr {
-		msg += v.String()
-	}
+func (m vardeclvaldecl) String() string {
+	msg := m.Name.String()
 
 	if m.Value != nil {
 		msg += " = " + infa2str(m.Value)
@@ -66,62 +62,58 @@ func (m vardeclval) String() string {
 	return msg
 }
 
-type varblockdecl struct {
-	Arr    bool               `json:"arr,omitempty"`
-	Fields []varblocksubfield `json:"fields,omitempty"`
+type varpkgname struct {
+	Pkgs []string        `json:"pkgs,omitempty"`
+	Name vardeclnametype `json:"name,omitempty"`
 }
 
-func (m varblockdecl) MarshalJSON() ([]byte, error) {
+func (m varpkgname) MarshalJSON() ([]byte, error) {
 	return []byte("\"" + m.String() + "\""), nil
 }
 
-func (m varblockdecl) String() string {
-	msg := "{"
-	if m.Arr {
-		msg = "["
+func (m varpkgname) String() string {
+	msg := ""
+	if len(m.Pkgs) > 0 {
+		msg += strings.Join(m.Pkgs, "_") + "_"
 	}
 
-	for _, v := range m.Fields {
-		msg += v.String() + ", "
-	}
-	msg = strings.TrimSuffix(msg, ", ")
+	return msg + m.Name.String()
+}
 
-	if m.Arr {
-		msg += "]"
-	} else {
-		msg += "}"
+type vardeclnametype struct {
+	Name string           `json:"name,omitempty"`
+	Ops  []string         `json:"ops,omitempty"`
+	Arr  []vardeclarrtype `json:"arr,omitempty"`
+}
+
+func (m vardeclnametype) MarshalJSON() ([]byte, error) {
+	return []byte("\"" + m.String() + "\""), nil
+}
+
+func (m vardeclnametype) String() string {
+	msg := ""
+	for _, v := range m.Ops {
+		msg += v
+	}
+
+	msg += m.Name
+	for _, v := range m.Arr {
+		msg += v.String()
 	}
 
 	return msg
 }
 
-type varblocksubfield struct {
-	Name  string      `json:"name,omitempty"`
-	Value interface{} `json:"val,omitempty"`
-}
-
-func (m varblocksubfield) MarshalJSON() ([]byte, error) {
-	return []byte("\"" + m.String() + "\""), nil
-}
-
-func (m varblocksubfield) String() string {
-	if m.Name != "" {
-		return "." + m.Name + " = " + infa2str(m.Value)
-	}
-
-	return infa2str(m.Value)
-}
-
-type vararrdecl struct {
+type vardeclarrtype struct {
 	Arr   bool   `json:"arr,omitempty"`   // 是否是数组
 	Count string `json:"count,omitempty"` // 数组长度, -1 代表不定长
 }
 
-func (m vararrdecl) MarshalJSON() ([]byte, error) {
+func (m vardeclarrtype) MarshalJSON() ([]byte, error) {
 	return []byte("\"" + m.String() + "\""), nil
 }
 
-func (m vararrdecl) String() string {
+func (m vardeclarrtype) String() string {
 	if !m.Arr {
 		return ""
 	}
@@ -134,7 +126,6 @@ func (m vararrdecl) String() string {
 
 type varref struct {
 	Parent interface{}   `json:"parent,omitempty"`
-	Ops    []string      `json:"ops,omitempty"`
 	Fields []varrefField `json:"field,omitempty"`
 }
 
@@ -143,12 +134,7 @@ func (m varref) MarshalJSON() ([]byte, error) {
 }
 
 func (m varref) String() string {
-	msg := ""
-	for _, v := range m.Ops {
-		msg += v
-	}
-
-	msg += infa2str(m.Parent)
+	msg := infa2str(m.Parent)
 
 	for _, v := range m.Fields {
 		msg += v.String()
@@ -158,8 +144,8 @@ func (m varref) String() string {
 }
 
 type varrefField struct {
-	Ptr  bool    `json:"ptr,omitempty"`
-	Name nameref `json:"name,omitempty"`
+	Ptr  bool       `json:"ptr,omitempty"`
+	Name varpkgname `json:"name,omitempty"`
 }
 
 func (m varrefField) MarshalJSON() ([]byte, error) {

@@ -6,8 +6,8 @@ import (
 )
 
 type function struct {
-	Typ  funcref     `json:"type,omitempty"` // 类型
-	Body SymbolTable `json:"body,omitempty"`
+	Typ  funcref   `json:"type,omitempty"` // 类型
+	Body codeblock `json:"body,omitempty"`
 }
 
 func (m function) MarshalJSON() ([]byte, error) {
@@ -15,41 +15,17 @@ func (m function) MarshalJSON() ([]byte, error) {
 }
 
 func (m function) String() string {
-	msg := m.Typ.String() + " {\n"
-
-	for _, v := range m.Body.Statements {
-		msg += "\t" + v.String() + "\n"
-	}
-
-	vars := []string{}
-	for name, _ := range m.Body.Variables {
-		vars = append(vars, name)
-	}
-
-	types := []string{}
-	for name, _ := range m.Body.Enums {
-		types = append(types, name)
-	}
-	for name, _ := range m.Body.Types {
-		types = append(types, name)
-	}
-
-	funcs := []string{}
-	for name, _ := range m.Body.Functions {
-		funcs = append(funcs, name)
-	}
-
-	msg += "}\n" + fmt.Sprintf("var:%v type:%v func:%v\n", vars, types, funcs)
-
-	return msg
+	msg := m.Typ.String() + " "
+	return msg + m.Body.String()
 }
 
 type funcref struct {
-	Name   nameref      `json:"name,omitempty"`
-	Self   funcself     `json:"self,omitempty"`
-	Typ    functiontype `json:"type,omitempty"` // 类型
-	Retval typedecl     `json:"ret,omitempty"`
-	Params []vardecl    `json:"params,omitempty"`
+	Name   varpkgname     `json:"name,omitempty"`
+	Ref    vardeclvaldecl `json:"ref,omitempty"`
+	Self   funcself       `json:"self,omitempty"`
+	Typ    functiontype   `json:"type,omitempty"` // 类型
+	Retval typedecl       `json:"ret,omitempty"`
+	Params []vardecl      `json:"params,omitempty"`
 }
 
 func (m funcref) MarshalJSON() ([]byte, error) {
@@ -57,18 +33,26 @@ func (m funcref) MarshalJSON() ([]byte, error) {
 }
 
 func (m funcref) String() string {
-	params := ""
-	switch m.Typ {
-	case functionSelf:
-		params = m.Self.String() + ", "
-	}
+	name := m.Name.String()
 
+	params := ""
 	for _, v := range m.Params {
 		params += v.String() + ", "
 	}
-	params = strings.TrimSuffix(params, ", ")
 
-	return fmt.Sprintf("%s %s(%s)", m.Retval, m.Name.String(), params)
+	extendMsg := ""
+	switch m.Typ {
+	case functionRef:
+		name = "(" + m.Ref.Name.String() + ")" + name
+		if m.Ref.Value != nil {
+			extendMsg = " = " + infa2str(m.Ref.Value)
+		}
+	case functionSelf:
+		params = m.Self.String() + ", " + params
+	}
+
+	params = strings.TrimSuffix(params, ", ")
+	return fmt.Sprintf("%s %s(%s)%s", m.Retval, name, params, extendMsg)
 }
 
 type funcself struct {
@@ -103,11 +87,13 @@ func (m functiontype) MarshalJSON() ([]byte, error) {
 func (m functiontype) String() string {
 	return map[functiontype]string{
 		functionNormal: "function",
+		functionRef:    "func_ref",
 		functionSelf:   "func_self",
 	}[m]
 }
 
 const (
 	functionNormal functiontype = iota // 常规方法
+	functionRef                        // 引用方法
 	functionSelf                       // 成员方法
 )

@@ -1,6 +1,10 @@
 package main
 
-func NewFuncSymbolTable(fun function, stmts ...statement) SymbolTable {
+import (
+	"fmt"
+)
+
+func NewSymbolTable() SymbolTable {
 	st := SymbolTable{
 		Parent:    nil,
 		Enums:     make(map[string]enumdecl),
@@ -9,12 +13,30 @@ func NewFuncSymbolTable(fun function, stmts ...statement) SymbolTable {
 		Functions: make(map[string]function),
 	}
 
+	return st
+}
+
+func NewBodySymbolTable(stmts ...statement) SymbolTable {
+	st := NewSymbolTable()
+
+	for _, s := range stmts {
+		st.AddStmt(s)
+	}
+
+	return st
+}
+
+func NewFuncSymbolTable(fun function, stmts ...statement) SymbolTable {
+	st := NewSymbolTable()
+
 	st.AddVar(vardecl{
 		Typ:     varType,
 		RefType: fun.Typ.Self.Typ,
-		Values: []vardeclval{
+		Values: []vardeclvaldecl{
 			{
-				Name: fun.Typ.Self.Name,
+				Name: vardeclnametype{
+					Name: fun.Typ.Self.Name,
+				},
 			},
 		},
 	})
@@ -23,33 +45,87 @@ func NewFuncSymbolTable(fun function, stmts ...statement) SymbolTable {
 		st.AddVar(v)
 	}
 
-	st.AddStmts(stmts...)
+	for _, s := range stmts {
+		st.AddStmt(s)
+	}
 
 	return st
 }
 
 type SymbolTable struct {
-	Parent     *SymbolTable   `json:"-"`
-	Childs     []*SymbolTable `json:"-"`
-	Statements []statement    `json:"block,omitempty"`
-
 	Enums     map[string]enumdecl `json:"enums,omitempty"`
 	Types     map[string]typedecl `json:"types,omitempty"`
 	Variables map[string]vardecl  `json:"vars,omitempty"`
 	Functions map[string]function `json:"funs,omitempty"`
+
+	Parent     *SymbolTable   `json:"-"`
+	Childs     []*SymbolTable `json:"-"`
+	Statements []statement    `json:"block,omitempty"`
 }
 
-func (m *SymbolTable) AddStmts(stmt ...statement) {
-	for _, s := range stmt {
-		m.AddStmt(s)
+func (m SymbolTable) String() string {
+	msg := "{\n"
+
+	for _, stmt := range m.Statements {
+		msg += stmt.String() + "\n"
 	}
+
+	return msg + "}"
+}
+
+func (m SymbolTable) Debug() string {
+	msg := ""
+	vars := []string{}
+	for name, _ := range m.Variables {
+		vars = append(vars, name)
+	}
+
+	types := []string{}
+	for name, _ := range m.Enums {
+		types = append(types, name)
+	}
+	for name, _ := range m.Types {
+		types = append(types, name)
+	}
+
+	funcs := []string{}
+	for name, _ := range m.Functions {
+		funcs = append(funcs, name)
+	}
+
+	if len(vars) != 0 {
+		msg += fmt.Sprintf(" var:%v", vars)
+	}
+
+	if len(types) != 0 {
+		msg += fmt.Sprintf(" type:%v", types)
+	}
+
+	if len(funcs) != 0 {
+		msg += fmt.Sprintf(" func:%v", funcs)
+	}
+
+	if len(msg) != 0 {
+		msg = fmt.Sprintf(" /*%s */ ", msg)
+	}
+
+	return msg
 }
 
 func (m *SymbolTable) AddStmt(stmt statement) {
-
 	switch stmt.Typ {
 	case stmtIf:
 	case stmtFor:
+		forStmt := stmt.Stmt.(forstmt)
+
+		if decl, ok := forStmt.Init.(vardecl); ok {
+			if forStmt.Body.Body.Typ == stmtBlock {
+				st := forStmt.Body.Body.Stmt.(SymbolTable)
+
+				st.AddVar(decl)
+			}
+		}
+	case stmtCase:
 	case stmtWhile:
 	case stmtSwitch:
 	case stmtReturn:
@@ -67,9 +143,11 @@ func (m *SymbolTable) AddStmt(stmt statement) {
 						Typ: typedeclRef,
 						Ref: []string{opStmt.L.Expr.(varref).String(), opStmt.Op},
 					},
-					Values: []vardeclval{
+					Values: []vardeclvaldecl{
 						{
-							Name:  opStmt.R.Expr.(varref).String(),
+							Name: vardeclnametype{
+								Name: opStmt.R.Expr.(varref).String(),
+							},
 							Value: varStmt.R,
 						},
 					},
@@ -77,14 +155,16 @@ func (m *SymbolTable) AddStmt(stmt statement) {
 				m.AddVar(decl)
 				stmt.Stmt = decl
 			}
-			// m.AddFun(stmt)
 		}
 	case stmtEnumDecl:
 		m.AddEnum(stmt.Stmt.(enumdecl))
 	case stmtTypeDecl:
 		m.AddType(stmt.Stmt.(typedecl))
+	case stmtBlock:
+	case stmtNone:
+	case stmtBreak:
 	default:
-		panic("unknown statement")
+		panic(fmt.Sprintf("unknown statement [%+v]", stmt.Typ))
 	}
 
 	m.Statements = append(m.Statements, stmt)
@@ -129,7 +209,7 @@ func (m *SymbolTable) AddVar(decl vardecl) {
 	}
 
 	for _, v := range decl.Values {
-		m.Variables[v.Name] = decl
+		m.Variables[v.Name.Name] = decl
 	}
 }
 

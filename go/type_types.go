@@ -20,8 +20,8 @@ func (m typedefine) String() string {
 }
 
 type enumdecl struct {
-	Name   string       `json:"name,omitempty"`
-	Fields []vardeclval `json:"field,omitempty"`
+	Name   string           `json:"name,omitempty"`
+	Fields []vardeclvaldecl `json:"field,omitempty"`
 }
 
 func (m enumdecl) MarshalJSON() ([]byte, error) {
@@ -31,7 +31,7 @@ func (m enumdecl) MarshalJSON() ([]byte, error) {
 func (m enumdecl) String() string {
 	msg := "enum " + m.Name + "{\n"
 	for _, v := range m.Fields {
-		msg += "\t" + v.Name
+		msg += indentation + v.Name.String()
 		if v.Value != nil {
 			msg += " = " + infa2str(v.Value)
 		}
@@ -80,14 +80,14 @@ func (m blocktypedecl) String() string {
 	case typedeclStruct:
 		msg := "struct " + m.Name + "{\n"
 		for _, v := range m.Fields {
-			msg += "\t" + v.String() + ";\n"
+			msg += indentation + v.String() + ";\n"
 		}
 
 		return msg + "}"
 	case typedeclUnion:
 		msg := "union " + m.Name + "{\n"
 		for _, v := range m.Fields {
-			msg += "\t" + v.String() + ";\n"
+			msg += indentation + v.String() + ";\n"
 		}
 
 		return msg + "}"
@@ -97,11 +97,11 @@ func (m blocktypedecl) String() string {
 }
 
 type typedecl struct {
-	Name   string       `json:"name,omitempty"`
-	Typ    typedecltype `json:"type,omitempty"` // 类型
-	Ref    []string     `json:"ref,omitempty"`
-	Fields []vardecl    `json:"field,omitempty"`
-	Values []vardeclval `json:"vals,omitempty"`
+	Name   string           `json:"name,omitempty"`
+	Typ    typedecltype     `json:"type,omitempty"` // 类型
+	Ref    []string         `json:"ref,omitempty"`
+	Fields []vardecl        `json:"field,omitempty"`
+	Values []vardeclvaldecl `json:"vals,omitempty"`
 }
 
 func (m typedecl) MarshalJSON() ([]byte, error) {
@@ -126,14 +126,14 @@ func (m typedecl) String() string {
 	case typedeclStruct:
 		msg = "struct " + m.Name + "{\n"
 		for _, v := range m.Fields {
-			msg += "\t" + v.String() + ";\n"
+			msg += indentation + v.String() + ";\n"
 		}
 
 		msg += "}"
 	case typedeclUnion:
 		msg = "union " + m.Name + "{\n"
 		for _, v := range m.Fields {
-			msg += "\t" + v.String() + ";\n"
+			msg += indentation + v.String() + ";\n"
 		}
 
 		msg += "}"
