@@ -73,9 +73,11 @@ whitespace_separates  [ \t\v\n\f]
 "_Complex"              { return node(COMPLEX); }
 
 "void"					{ return node(VOID); }
+"func"					{ return node(FUNC); }
 "enum"					{ return node(ENUM); }
 "union"					{ return node(UNION); }
 "struct"				{ return node(STRUCT); }
+"typedef"				{ return node(TYPEDEF); }
 
 "inline"				{ return node(INLINE); }
 "return"				{ return node(RETURN); }
@@ -93,7 +95,6 @@ whitespace_separates  [ \t\v\n\f]
 "default"				{ return node(DEFAULT); }
 
 "sizeof"				{ return node(IDENTIFIER); } // node(SIZEOF);
-"typedef"				{ return node(TYPEDEF); }
 
 "_Alignas"              { return node(ALIGNAS); }
 "_Alignof"              { return node(ALIGNOF); }

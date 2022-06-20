@@ -43,6 +43,7 @@
 	exprs expressions
 	op opexpr
 	call callexpr
+	lambda lambdaexpr
 
 	stmt statement
 	stmts []statement
@@ -63,7 +64,7 @@
 %token	<lval> XOR_ASSIGN OR_ASSIGN
 %token	<lval> TYPEDEF_NAME ENUMERATION_CONSTANT
 
-%token	<lval> TYPEDEF EXTERN STATIC AUTO REGISTER INLINE
+%token	<lval> TYPEDEF FUNC EXTERN STATIC AUTO REGISTER INLINE
 %token	<lval> CONST RESTRICT VOLATILE
 %token	<lval> BOOL CHAR SHORT INT LONG SIGNED UNSIGNED FLOAT DOUBLE
 %token	<lval> COMPLEX  
@@ -106,8 +107,8 @@
 %type <valitems> type_enum_body  enum_body_items
 
 // function
-%type <fun> function_declaration  
-%type <fref> function_qualifier
+%type <fun> function_declaration  lambda_declaration
+%type <fref> function_qualifier flambda_qualifier
 %type <fself> function_qualifier_self_variable
 /* %type <fref> function_declaration_qualifier_block */
 
@@ -124,6 +125,7 @@
 %type <op> op_expression assignment_statement
 %type <call> call_expression
 %type <lval> constant_expression
+%type <lambda> lambda_expression
 %type <vref> variable_ref_expression
 %type <expr> expression expression_statement
 %type <exprs> expressions params_assignment
@@ -157,16 +159,6 @@ global_statement
 	| type_declaration  ';' 		{ $$.Stmt = $1; $$.Typ = stmtTypeDecl; }
 	| variable_declaration  ';' 	{ $$.Stmt = $1; $$.Typ = stmtVarDecl; }
 	;
-
-/* global_statement
-	: ';'
-	| IDENTIFIER ';'				{ $$.Stmt = $1; $$.Typ = stmtNone; ST().AddStmt($$); }
-	| typedef_declaration ';'		{ $$.Stmt = $1; $$.Typ = stmtTypeDef; ST().AddStmt($$); }
-	| function_declaration   		{ $$.Stmt = $1; $$.Typ = stmtFuncDecl; ST().AddStmt($$); }
-	| enum_declaration  ';' 		{ $$.Stmt = $1; $$.Typ = stmtEnumDecl; ST().AddStmt($$); }
-	| type_declaration  ';' 		{ $$.Stmt = $1; $$.Typ = stmtTypeDecl; ST().AddStmt($$); }
-	| variable_declaration  ';' 	{ $$.Stmt = $1; $$.Typ = stmtVarDecl; ST().AddStmt($$); }
-	; */
 
 codeblock_declaration
 	: codeblock_statement  					{ $$.Body = $1; }
@@ -294,6 +286,7 @@ expressions
 expression
 	: op_expression { $$.Expr = $1; $$.Typ = exprOp; }
 	| call_expression { $$.Expr = $1; $$.Typ = exprCall; }
+	| lambda_expression { $$.Expr = $1; $$.Typ = exprLambda; }
 	| variable_ref_expression { $$.Expr = $1; $$.Typ = exprVar; }
 	| value_blockdecl_expression { $$.Expr = $1; $$.Typ = exprVar; }
 	| constant_expression { $$.Expr = $1.text; $$.Typ = exprConstant; }
@@ -320,7 +313,21 @@ case_statement
 	;
 
 call_expression
-	: variable_ref_expression params_assignment { $$.Var = $1; $$.Params = $2; } 
+	: lambda_expression params_assignment { $$.Var.Parent = $1; $$.Params = $2; } 
+	| variable_ref_expression params_assignment { $$.Var = $1; $$.Params = $2; } 
+	;
+
+lambda_expression
+	: lambda_declaration { $$.Fn = $1;  lambdaIndex++;$$.Fn.Typ.Name.Name.Name = "lambda_" + fmt.Sprintf("%d", lambdaIndex); } 
+	;
+
+lambda_declaration
+	: FUNC flambda_qualifier codeblock_declaration						{ $$.Typ = $2; $$.Body = $3; }
+	;
+
+flambda_qualifier
+	: params_declaration type_ref { $$.Retval = $2; $$.Params = $1; }
+	| variable_ref_pkgname params_declaration type_ref { $$.Retval = $3; $$.Name = $1; $$.Params = $2; }
 	;
 
 constant_expression

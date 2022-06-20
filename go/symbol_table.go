@@ -63,10 +63,17 @@ type SymbolTable struct {
 	Statements []statement    `json:"block,omitempty"`
 }
 
-func (m SymbolTable) Source() string {
+func (m *SymbolTable) Source() string {
 	msg := ""
-	for _, stmt := range m.Statements {
-		msg += stmt.String() + "\n"
+
+	stmts := m.Statements
+	m.Statements = make([]statement, 0)
+
+	for _, stmt := range stmts {
+		msg2 := stmt.String() + "\n"
+		msg1 := m.Source() + "\n"
+
+		msg += msg1 + msg2
 	}
 
 	return msg

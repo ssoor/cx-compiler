@@ -40,6 +40,8 @@ func (m expression) String() string {
 		return infa2str(m.Expr)
 	case exprVar:
 		return infa2str(m.Expr)
+	case exprLambda:
+		return infa2str(m.Expr)
 	case exprVarBlock:
 		return infa2str(m.Expr)
 	case exprCall:
@@ -83,6 +85,21 @@ func (m opexpr) String() string {
 	return fmt.Sprintf("%s %s %s", m.L.String(), m.Op, m.R.String())
 }
 
+type lambdaexpr struct {
+	Fn function `json:"inline,omitempty"`
+}
+
+func (m lambdaexpr) MarshalJSON() ([]byte, error) {
+	return []byte("\"" + m.String() + "\""), nil
+}
+
+var lambdaIndex = 0
+
+func (m lambdaexpr) String() string {
+	ST().AddStmt(statement{Typ: stmtFuncDecl, Stmt: m.Fn})
+	return m.Fn.Typ.Name.String()
+}
+
 type callexpr struct {
 	Var    varref       `json:"var,omitempty"`
 	Params []expression `json:"params,omitempty"`
@@ -122,6 +139,7 @@ func (m exprtype) String() string {
 const (
 	exprUnknown    exprtype = iota // 常规方法
 	exprNone                       // 空
+	exprLambda                     // 匿名函数
 	exprOp                         // 计算
 	exprVar                        // 变量引用
 	exprVarBlock                   // 块变量定义

@@ -12,15 +12,16 @@
 // 单行注释
 
 /*
-多行注释 
+多行注释
 */
 
 typedef int int_t; // 声明类型
 
-union union_t{ // 声明联合体
+union union_t
+{ // 声明联合体
     int a;
     int_t b;
-    int_t* c,d,e;
+    int_t *c, d, e;
     // auto int_t d;
     // static int_t e;
     // extern int_t f;
@@ -30,13 +31,14 @@ union union_t{ // 声明联合体
     volatile int_t g3[1][1];
 };
 
-union union_t union_v1 = {0}; // 声明联合体变量
+union union_t union_v1 = {0};              // 声明联合体变量
 union union_t union_v2 = {.a = 0, .b = 1}; // 声明联合体变量
 
-struct struct_t{ // 声明结构体
+struct struct_t
+{ // 声明结构体
     int a;
     int_t b;
-    int_t* c,d,e;
+    int_t *c, d, e;
     // auto int_t d;
     // static int_t e;
     // extern int_t f;
@@ -46,15 +48,16 @@ struct struct_t{ // 声明结构体
     volatile int_t g3[1][1];
 };
 
-struct struct_t struct_v1 = {0}; // 声明结构体变量
+struct struct_t struct_v1 = {0};              // 声明结构体变量
 struct struct_t struct_v2 = {.a = 0, .b = 1}; // 声明结构体变量
 
 struct_v8;
 
-enum { // 声明枚举
+enum
+{ // 声明枚举
     enum_a,
     enum_b = 2,
-    enum_c = 2+3,
+    enum_c = 2 + 3,
     enum_d = enum_a + enum_b,
 };
 
@@ -128,19 +131,17 @@ float numberf4 = {1.1};
 double numberd4 = {1.1};
 
 // void empv_c = 0, empv_d = {0}; // error: variable ‘empv_c’ has initializer but incomplete type
-char strc_c = 0,strc_d = {0};
-int numberi_c = 0,numberi_d = {0};
-long numberl_c = 0,numberl_d = {0};
-short numbers_c = 0,numbers_d = {0};
-float numberf_c = 0,numberf_d = {0};
-double numberd_c = 0,numberd_d = {0};
-
-
+char strc_c = 0, strc_d = {0};
+int numberi_c = 0, numberi_d = {0};
+long numberl_c = 0, numberl_d = {0};
+short numbers_c = 0, numbers_d = {0};
+float numberf_c = 0, numberf_d = {0};
+double numberd_c = 0, numberd_d = {0};
 
 // long void empvl; // error: both ‘long’ and ‘void’ in declaration specifiers
 // long char strlc; // error: both ‘long’ and ‘char’ in declaration specifiers
 long int numberli;
-long long numberll; 
+long long numberll;
 // long short numberls; // error: both ‘long’ and ‘short’ in declaration specifiers
 // long float numberlf; // error: both ‘long’ and ‘float’ in declaration specifiers
 long double numberld;
@@ -153,7 +154,6 @@ signed short numberss;
 // signed float numbersf; // error: both ‘signed’ and ‘float’ in declaration specifiers
 // signed double numbersd; // error: both ‘signed’ and ‘double’ in declaration specifiers
 
-
 // unsigned void empuv; // error: both ‘unsigned’ and ‘void’ in declaration specifiers
 unsigned char struc;
 unsigned int numberui;
@@ -162,22 +162,20 @@ unsigned short numberus;
 // unsigned float numberuf; // error: both ‘unsigned’ and ‘float’ in declaration specifiers
 // unsigned double numberud; // error: both ‘unsigned’ and ‘double’ in declaration specifiers
 
+const int const_1 = 212;
+const int const_3 = 0xFeeL;
+const int const_4 = 0777;
+const int const_2 = 215u;
+const int const_5 = 032U;
 
-const int const_1 = 212;         
-const int const_3 = 0xFeeL;      
-const int const_4 = 0777;        
-const int const_2 = 215u;       
-const int const_5 = 032U;        
-
-const char const_6 = 'a';        
-const char const_7[] = "合法的\n";        
+const char const_6 = 'a';
+const char const_7[] = "合法的\n";
 const char const_8[] = "合法的跨行\
-                            合法的跨行结束";        
-
+                            合法的跨行结束";
 
 // auto int storagea; // error: file-scope declaration of ‘stdina’ specifies ‘auto’
-extern int storagee; 
-static int storages; 
+extern int storagee;
+static int storages;
 // register int storager; // error: register name not specified for ‘storager’
 volatile int storagev;
 
@@ -198,11 +196,11 @@ int op_12 = 1 < 1;
 int op_13 = 1 <= 1;
 int op_14 = 1 && 1;
 int op_15 = 1 || 1;
-int op_16 = ! 1;
+int op_16 = !1;
 int op_17 = 1 & 1;
 int op_18 = 1 | 1;
 int op_19 = 1 ^ 1;
-int op_20 = ~ 1;
+int op_20 = ~1;
 int op_21 = 1 << 1;
 int op_22 = 1 >> 1;
 int op_23 = 1;
@@ -222,10 +220,10 @@ int op_35 = 1 ? 0 : 1;
 int op_36 = sizeof(op_35);
 // int op_37 = fun1(); //  error: initializer element is not constant
 
-
 numberi; // warning: data definition has no type or storage class
 
-int funa(int p1,int p2) {
+int funa(int p1, int p2)
+{
     int op_1 = 1 + 1;
     int op_2 = 1 - 1;
     int op_3 = 1 * 1;
@@ -243,11 +241,11 @@ int funa(int p1,int p2) {
     int op_13 = 1 <= 1;
     int op_14 = 1 && 1;
     int op_15 = 1 || 1;
-    int op_16 = ! 1;
+    int op_16 = !1;
     int op_17 = 1 & 1;
     int op_18 = 1 | 1;
     int op_19 = 1 ^ 1;
-    int op_20 = ~ 1;
+    int op_20 = ~1;
     int op_21 = 1 << 1;
     int op_22 = 1 >> 1;
     int op_23 = 1;
@@ -267,8 +265,6 @@ int funa(int p1,int p2) {
     int op_36 = sizeof(op_35);
     int op_37 = fun1(); //  error: initializer element is not constant
 
-
-
     op_1 = 1 + 1;
     op_2 = 1 - 1;
     op_3 = 1 * 1;
@@ -286,11 +282,11 @@ int funa(int p1,int p2) {
     op_13 = 1 <= 1;
     op_14 = 1 && 1;
     op_15 = 1 || 1;
-    op_16 = ! 1;
+    op_16 = !1;
     op_17 = 1 & 1;
     op_18 = 1 | 1;
     op_19 = 1 ^ 1;
-    op_20 = ~ 1;
+    op_20 = ~1;
     op_21 = 1 << 1;
     op_22 = 1 >> 1;
     op_23 = 1;
@@ -311,230 +307,266 @@ int funa(int p1,int p2) {
     op_37 = fun1(); //  error: initializer element is not constant
 
     struct struct_t struct_v1;
-    struct struct_t* struct_v2;
+    struct struct_t *struct_v2;
 
     struct_v1.a = struct_v1.a;
     ((struct_v2)->a) = struct_v2->a;
 
     auto int storagea;
-    extern int storagee; 
-    static int storages; 
+    extern int storagee;
+    static int storages;
     register int storager;
     volatile int storagev;
 
     op_1 = op_2 + op_3 - op_4 * op_5 / op_8 % op_9;
 }
 
-int fun1() {
+int fun1()
+{
     return 1;
 }
 
-inline int fun2() {
+inline int fun2()
+{
     return 1;
 }
 
-static int fun3() {
+static int fun3()
+{
     return 1;
 }
 
-static int fun4(int p1) {
+static int fun4(int p1)
+{
     return 1;
 }
 
 // typedef int (*call[])();
 // typedef int (*calls[5])();
 
-int fun_if() {
+int fun_if()
+{
     int a = 1;
-    if (a) {
+    if (a)
+    {
         return 1;
     }
 
-    if (!a) {
+    if (!a)
+    {
         return 1;
     }
 
-    if (a) {
+    if (a)
+    {
         return 1;
-    } else {
+    }
+    else
+    {
         return 0;
     }
 
-    if (a) {
+    if (a)
+    {
         return 1;
-    } else if (a == 2) {
+    }
+    else if (a == 2)
+    {
         return 2;
     }
 
-    if (a) {
+    if (a)
+    {
         return 1;
-    } else {
-        if (a == 2) {
+    }
+    else
+    {
+        if (a == 2)
+        {
             return 2;
         }
     }
 }
 
-int for_for() {
+int for_for()
+{
     int a = 1;
 
-    for (int i = 0; i < 10;i ++) {
+    for (int i = 0; i < 10; i++)
+    {
         break;
     }
 
-    for (int i = 0;;i < 10) {
+    for (int i = 0;; i < 10)
+    {
         break;
     }
 
-    for (int i = 0; i < 10;) {
+    for (int i = 0; i < 10;)
+    {
         break;
     }
 
-    for (; a < 10;a + 0) {
+    for (; a < 10; a + 0)
+    {
         break;
     }
 
-    for (; a < 10;) {
+    for (; a < 10;)
+    {
         break;
     }
 
-    for (a < 10;;) {
+    for (a < 10;;)
+    {
         break;
     }
 
-    for (;;a < 10) {
+    for (;; a < 10)
+    {
         break;
     }
 
-    for (;;) {
+    for (;;)
+    {
         break;
     }
 }
 
-int for_while() {
+int for_while()
+{
     int a = 1;
-    do {
+    do
+    {
         int b = 0;
-    } while(a);
+    } while (a);
 
-    while(a) {
+    while (a)
+    {
         int c = a + 0;
         c++;
     }
 }
 
-int fun_switch() {
-    int str = 0,a,b,c,d[1],e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,**z[1][1];
+int fun_switch()
+{
+    int str = 0, a, b, c, d[1], e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, **z[1][1];
     int (*calls[5])() = {0};
 
-    switch (str) {
-        case 1:
-        case enum_a:
-        default:
-            break;
+    switch (str)
+    {
+    case 1:
+    case enum_a:
+    default:
+        break;
     }
 
-    switch (str) {
-        case 1: break;
-        case enum_a: break;
-        default: break;
+    switch (str)
+    {
+    case 1:
+        break;
+    case enum_a:
+        break;
+    default:
+        break;
     }
 
-    switch (str) {
-        case 1: { break; }
-        case enum_a: { break; }
-        default: { break; }
+    switch (str)
+    {
+    case 1:
+    {
+        break;
+    }
+    case enum_a:
+    {
+        break;
+    }
+    default:
+    {
+        break;
+    }
     }
 
-    switch (str) {
-        case 1:
-            break;
-        case enum_a:
-            break;
-        default:
-            break;
+    switch (str)
+    {
+    case 1:
+        break;
+    case enum_a:
+        break;
+    default:
+        break;
     }
 
-    switch (str) {
-        case 1:
-        {
-            break;
-        }
-        case enum_a:
-        {
-            break;
-        }
-        default:
-        {
-            break;
-        }
+    switch (str)
+    {
+    case 1:
+    {
+        break;
+    }
+    case enum_a:
+    {
+        break;
+    }
+    default:
+    {
+        break;
+    }
     }
 
-    switch (str) {
-        case 1:
-            calls[0](a, b+c, d[1], sizeof(str) * a, e*f,g-h/i*s);
-            break;
-        case enum_a:
-            calls[0](a, b+c, d[1], sizeof(str) * a, e*f,g-h/i*s);
-            break;
-        default:
-            calls[0](a, b+c, d[1], sizeof(str) * a, e*f,g-h/i*s);
-            break;
+    switch (str)
+    {
+    case 1:
+        calls[0](a, b + c, d[1], sizeof(str) * a, e * f, g - h / i * s);
+        break;
+    case enum_a:
+        calls[0](a, b + c, d[1], sizeof(str) * a, e * f, g - h / i * s);
+        break;
+    default:
+        calls[0](a, b + c, d[1], sizeof(str) * a, e * f, g - h / i * s);
+        break;
     }
 
-    switch (str) {
-        case 1:
-        {
-            calls[0](a, b+c, d[1], sizeof(str) * a, e*f,g-h/i*s);
-            break;
-        }
-        case enum_a:
-        {
-            calls[0](a, b+c, d[1], sizeof(str) * a, e*f,g-h/i*s);
-            break;
-        }
-        default:
-        {
-            calls[0](a, b+c, d[1], sizeof(str) * a, e*f,g-h/i*s);
-            break;
-        }
+    switch (str)
+    {
+    case 1:
+    {
+        calls[0](a, b + c, d[1], sizeof(str) * a, e * f, g - h / i * s);
+        break;
+    }
+    case enum_a:
+    {
+        calls[0](a, b + c, d[1], sizeof(str) * a, e * f, g - h / i * s);
+        break;
+    }
+    default:
+    {
+        calls[0](a, b + c, d[1], sizeof(str) * a, e * f, g - h / i * s);
+        break;
+    }
     }
 }
 
-
-
-typedef struct string {
+typedef struct string
+{
     int len;
     char ptr[1]; // '\0'
 } string;
 
-const char * (string* this) get() {
-    return this->ptr;
+const char *cat3(string *str, string *str2, string *str3)
+{
+    const char *(*call1)(string * str) = func(string * str) const char *
+    {
+        return func(string * str) const char *
+        {
+            return str;
+        }
+        (str);
+    };
+
+    return call1(str2);
 }
 
-const char * (string* this) cat3(string* str,string* str2,string* str3) {
-    return this->ptr;
-}
-
-string* string:new(const char * ptr) {
-    int len = strlen(ptr);
-    string* str = malloc(sizeof(string)+len);
-    
-    struct string {
-        int len;
-        char ptr[1]; // '\0'
-    } string2 = {0},string3,*string4 = string:new("string");
-
-    str->len = len;
-    return memcpy(str->ptr, ptr, len);
-}
-
-void string:free(string* str) {
-    int i = 0;
-    string* str1 = 0;
-    string* str2[] = {0};
-    string* str3 = 0;
-    
-
-    free(str);
+int main()
+{
+    return 0;
 }
