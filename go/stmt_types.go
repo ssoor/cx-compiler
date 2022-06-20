@@ -38,6 +38,8 @@ func (m statement) String() string {
 	switch m.Typ {
 	case stmtNone:
 		return ";"
+	case stmtPreprocess:
+		return infa2str(m.Stmt)
 	case stmtBreak:
 		msg := ""
 		if m.Stmt != nil {
@@ -184,30 +186,32 @@ func (m stmttype) MarshalJSON() ([]byte, error) {
 
 func (m stmttype) String() string {
 	return map[stmttype]string{
-		stmtUnknown:  "unknown",
-		stmtNone:     "none",
-		stmtBlock:    "block",
-		stmtBreak:    "break",
-		stmtIf:       "if",
-		stmtFor:      "for",
-		stmtCase:     "case",
-		stmtSwitch:   "switch",
-		stmtReturn:   "return",
-		stmtExpr:     "stmt_expr",
-		stmtAssign:   "=",
-		stmtVarDecl:  "vardecl",
-		stmtEnumDecl: "enumdecl",
-		stmtTypeDecl: "typedecl",
-		stmtTypeDef:  "typedef",
-		stmtFuncDecl: "funcdecl",
-		stmtComment:  "comment",
-		stmtLineEnd:  "\\n",
+		stmtUnknown:    "unknown",
+		stmtNone:       "none",
+		stmtPreprocess: "#???",
+		stmtBlock:      "block",
+		stmtBreak:      "break",
+		stmtIf:         "if",
+		stmtFor:        "for",
+		stmtCase:       "case",
+		stmtSwitch:     "switch",
+		stmtReturn:     "return",
+		stmtExpr:       "stmt_expr",
+		stmtAssign:     "=",
+		stmtVarDecl:    "vardecl",
+		stmtEnumDecl:   "enumdecl",
+		stmtTypeDecl:   "typedecl",
+		stmtTypeDef:    "typedef",
+		stmtFuncDecl:   "funcdecl",
+		stmtComment:    "comment",
+		stmtLineEnd:    "\\n",
 	}[m]
 }
 
 const (
 	stmtUnknown stmttype = iota
 	stmtNone
+	stmtPreprocess
 	stmtBlock
 	stmtBreak
 	stmtIf

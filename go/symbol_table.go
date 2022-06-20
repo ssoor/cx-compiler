@@ -178,6 +178,7 @@ func (m *SymbolTable) AddStmt(stmt statement) {
 		m.AddType(stmt.Stmt.(typedecl))
 	case stmtBlock:
 	case stmtNone:
+	case stmtPreprocess:
 	case stmtBreak:
 	case stmtTypeDef:
 	case stmtFuncDecl:

@@ -48,7 +48,7 @@ whitespace_separates  [ \t\v\n\f]
     "*/"            { switch_yystate(prev_yystate); return node(BLOCK_COMMENT); }
 }
 
-"#".*                                    { return node(IGNORE); }
+"#"([^\n\\]|{unquote_char})*                                    { return node(PREPROCESS); }
 
 "auto"					{ return node(AUTO); }
 "static"				{ return node(STATIC); }
@@ -121,7 +121,7 @@ whitespace_separates  [ \t\v\n\f]
 {hexadecimal_prefix}{hexadecimal_number}*"."{hexadecimal_number}+{p_number}{FS}?			{ return node(F_CONSTANT); }
 {hexadecimal_prefix}{hexadecimal_number}+"."{p_number}{FS}?			    { return node(F_CONSTANT); }
 
-({SP}?\"([^"\\]|{unquote_char})*\"{whitespace_separates}*)+	{ return node(STRING_LITERAL); }
+({SP}?\"([^"\\]|{unquote_char})*\"({whitespace_separates}|{unquote_char})*)+	{ return node(STRING_LITERAL); }
 
 "..."					{ return node(ELLIPSIS); }
 

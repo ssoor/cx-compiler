@@ -8,12 +8,62 @@
 */
 #include <stdio.h>
 #include <string.h>
+#include "string.h"
+
+#if YY_FLEX_SUBMINOR_VERSION > 0
+#define FLEX_BETA
+#endif
+
+#ifdef FLEXINT_H
+#define FLEXINT_H 
+#endif
+
+#ifndef FLEXINT_H
+#define FLEXINT_H
+#endif
+
+#define P(a,b,c,d,k,s,t)                                \
+{                                                       \
+    a += F(b,c,d) + X[k] + t; a = S(a,s) + b;           \
+}
 
 // 单行注释
 
 /*
 多行注释
 */
+
+/* Taken from openssl s_client -connect api.gigafive.com:443 -showcerts
+ */
+static const char *rsa4096_cert = "-----BEGIN CERTIFICATE-----\n"\
+    "MIIExzCCA6+gAwIBAgIBAzANBgkqhkiG9w0BAQsFADCBkjELMAkGA1UEBhMCVVMx\n"\
+    "CzAJBgNVBAgMAkNBMRQwEgYDVQQHDAtTYW50YSBDbGFyYTElMCMGA1UECgwcR2ln\n"\
+    "YWZpdmUgVGVjaG5vbG9neSBQYXJ0bmVyczEZMBcGA1UEAwwQR2lnYWZpdmUgUm9v\n"\
+    "dCBDQTEeMBwGCSqGSIb3DQEJARYPY2FAZ2lnYWZpdmUuY29tMB4XDTE2MDgyNzE2\n"\
+    "NDYyM1oXDTI2MDgyNTE2NDYyM1owgZcxCzAJBgNVBAYTAlVTMQswCQYDVQQIDAJD\n"\
+    "QTEUMBIGA1UEBwwLU2FudGEgQ2xhcmExKTAnBgNVBAoMIEdpZ2FmaXZlIFRlY2hu\n"\
+    "b2xvZ3kgUGFydG5lcnMgTExDMRkwFwYDVQQDDBBhcGkuZ2lnYWZpdmUuY29tMR8w\n"\
+    "HQYJKoZIhvcNAQkBFhBjcmxAZ2lnYWZpdmUuY29tMIICIjANBgkqhkiG9w0BAQEF\n"\
+    "AAOCAg8AMIICCgKCAgEAof82VrEpXMpsI/ddW6RLeTeSYtxiXZZkRbDKN6otYgEk\n"\
+    "vA8yRbzei2cO2A/8+Erhe9beYLAMXWF+bjoUAFwnuIcbmufgHprOYzX/7CYXCsrH\n"\
+    "LrJfVF6kvjCXy2W3xSvgh8ZgHNWnBGzl13tq19Fz8x0AhK5GQ9608oJCbnQjpVSI\n"\
+    "lZDl3JVOifCeXf2c7nMhVOC/reTeto0Gbchs8Ox50WyojmfYbVjOQcA7f8p1eI+D\n"\
+    "XUJK01cUGVu6/KarVArGHh5LsiyXOadbyeyOXPmjyrgarG3IIBeQSNECfJZPc/OW\n"\
+    "lFszjU4YLDckI4x+tReiuFQbQPN5sDplcEldmZZm/8XD36ddvAaDds+SYlPXxDK7\n"\
+    "7L8RBVUG2Ylc9YZf7RE6IMDmdQmsCZDX0VxySYEmzv5lnAx4mzzaXcgS+kHMOLyK\n"\
+    "n9UxmpzwQoqqC9tMZqwRaeKW1njR1dSwQLqirBPfGCWKkpkpm7C3HEfeeLrasral\n"\
+    "aPf6LAwN3A4ZKHa5Jmne7W+1eYS1aTXOAOLIPcXRAh1B80H+SusIdM9d6vk2YTIg\n"\
+    "khwGQV3sgM6nIO5+T/8z141UEjWbtP7pb/u0+G9Cg7TwvRoO2UukxdvOwNto1G2e\n"\
+    "J3rKB/JSYsYWnPHvvh9XR+55PZ4iCf9Rqw/IP82uyGipR9gxlHqN8WhMTj9tNEkC\n"\
+    "AwEAAaMhMB8wHQYDVR0OBBYEFISCemcSriz1HFhRXluw9H+Bv9lEMA0GCSqGSIb3\n"\
+    "DQEBCwUAA4IBAQCMetK0xe6Y/uZpb1ARh+hHYcHI3xI+IG4opWJeoB1gDh/xpNAW\n"\
+    "j6t5MGbLoqNMBXbqL26hnKVspyvCxw7ebI5ZJgjtbrD1t+0D8yrgIZzr7AWGA9Hj\n"\
+    "WIHqDHGDxwkmfjVVPmuO3l5RtJmL6KV6kVL2bOvVI6gECpFLddmOTtg+iXDfSw3x\n"\
+    "0+ueMYKr8QLF+TCxfzQTHvTHvOJtcZHecc1n7PYbRmI2p7tV6RoBpV69oM6NAVUV\n"\
+    "i2QoSxm0pYzDzavOaxwhEPHT34Tpg6fwXy1QokFD9OtxRFtdpTjL3bMWpatZE+ba\n"\
+    "cjvvf0utMW5fNjTTxu1nnpuxZM3ifTCqZJ+9\n"\
+    "-----END CERTIFICATE-----\n";
+
 
 typedef int int_t; // 声明类型
 

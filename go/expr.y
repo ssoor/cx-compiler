@@ -55,7 +55,7 @@
 	switchstmt switchstmt
 }
 
-%token	<lval> COMMENT BLOCK_COMMENT LINEEND IGNORE
+%token	<lval> COMMENT BLOCK_COMMENT LINEEND PREPROCESS IGNORE
 
 %token	<lval> IDENTIFIER I_CONSTANT F_CONSTANT STRING_LITERAL FUNC_NAME SIZEOF
 %token	<lval> PTR_OP INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
@@ -133,7 +133,7 @@
 // statement
 %type <cblock> codeblock_declaration
 %type <stmts> codeblock_statements 
-%type <stmt> global_statement codeblock_statement      block_statement brack_statement
+%type <stmt> global_statement preprocess_statement codeblock_statement      block_statement brack_statement
 
 
 %type <ifstmt> if_statement
@@ -152,6 +152,7 @@ global_statements
 
 global_statement
 	: ';'
+	| preprocess_statement			{ $$.Stmt = $1; }
 	| IDENTIFIER ';'				{ $$.Stmt = $1; $$.Typ = stmtNone; }
 	| typedef_declaration ';'		{ $$.Stmt = $1; $$.Typ = stmtTypeDef; }
 	| function_declaration   		{ $$.Stmt = $1; $$.Typ = stmtFuncDecl; }
@@ -160,17 +161,16 @@ global_statement
 	| variable_declaration  ';' 	{ $$.Stmt = $1; $$.Typ = stmtVarDecl; }
 	;
 
+preprocess_statement
+	: PREPROCESS						{ $$.Stmt = $1.text; $$.Typ = stmtPreprocess; }
+
 codeblock_declaration
 	: codeblock_statement  					{ $$.Body = $1; }
 	;
 
-codeblock_statements
-	: codeblock_statement 					{ $$ = append($$, $1); }
-	| codeblock_statements codeblock_statement  { $$ = append($1, $2); }
-	;
-
 codeblock_statement
 	: ';'  { $$.Typ = stmtNone; }
+	| preprocess_statement { $$.Stmt = $1; $$.Typ = stmtPreprocess; }
 	| brack_statement { $$ = $1; }
 	| block_statement { $$ = $1; }
 	| if_statement { $$.Stmt = $1; $$.Typ = stmtIf; }
@@ -194,6 +194,11 @@ brack_statement
 block_statement
 	:  '{'  '}' { $$.Stmt = NewSymbolTable(); $$.Typ = stmtBlock; }
 	|  '{' codeblock_statements '}' { $$.Stmt = NewBodySymbolTable($2...); $$.Typ = stmtBlock; }
+	;
+
+codeblock_statements
+	: codeblock_statement 					{ $$ = append($$, $1); }
+	| codeblock_statements codeblock_statement  { $$ = append($1, $2); }
 	;
 
 function_declaration
